@@ -19,12 +19,12 @@ using ImGuiVector4 = System.Numerics.Vector4;
 
 namespace DeveloperTool.Core
 {
-    public class SithImGuiDev : BaseSettingsPlugin<DevSettings>
+    public class DeveloperTool : BaseSettingsPlugin<Settings>
     {
         private static ImGuiVector2 _renderDebugwindowSize = new ImGuiVector2(784, API.GameController.Window.GetWindowRectangle().Height - 129);
         private static ImGuiVector2 _renderDebugwindowPos = new ImGuiVector2(593, 0);
         private static readonly ImGuiVector2 RenderDebugnextWindowPos = new ImGuiVector2(_renderDebugwindowSize.X + _renderDebugwindowPos.X, _renderDebugwindowSize.Y + _renderDebugwindowPos.Y);
-        public static SithImGuiDev Instance;
+        public static DeveloperTool Instance;
         private readonly List<(string name, object obj)> _objectForDebug = new List<(string name, object obj)>();
         private readonly List<RectangleF> _rectForDebug = new List<RectangleF>();
         private Color _clr = Color.Pink;
@@ -32,10 +32,10 @@ namespace DeveloperTool.Core
         private bool _enableDebugHover;
         private GameController _gameController;
         private Random _rnd;
-        private DevSettings _settings;
+        private Settings _settings;
         private long _uniqueIndex;
 
-        public SithImGuiDev() => PluginName = "Qvin Debug Tree";
+        public DeveloperTool() => PluginName = "Qvin Debug Tree";
 
         public override void Initialise()
         {
@@ -45,7 +45,7 @@ namespace DeveloperTool.Core
             GameController.Area.OnAreaChange += area => AreaChange();
             _settings = Settings;
             _rnd = new Random((int) _gameController.MainTimer.ElapsedTicks);
-            _coroutineRndColor = new Coroutine(() => { _clr = new Color(_rnd.Next(255), _rnd.Next(255), _rnd.Next(255), 255); }, new WaitTime(200), nameof(SithImGuiDev), "Random Color").Run();
+            _coroutineRndColor = new Coroutine(() => { _clr = new Color(_rnd.Next(255), _rnd.Next(255), _rnd.Next(255), 255); }, new WaitTime(200), nameof(DeveloperTool), "Random Color").Run();
             DebugObjects();
         }
 

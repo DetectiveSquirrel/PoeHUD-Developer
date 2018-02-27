@@ -3,9 +3,9 @@ using PoeHUD.Plugins;
 
 namespace DeveloperTool.Core
 {
-    public class DevSettings : SettingsBase
+    public class Settings : SettingsBase
     {
-        public DevSettings()
+        public Settings()
         {
             ShowWindow = true;
         }
