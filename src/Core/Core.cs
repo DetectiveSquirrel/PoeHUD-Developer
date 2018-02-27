@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Windows.Forms;
-using Developer_Tool;
 using ImGuiNET;
 using PoeHUD.Controllers;
 using PoeHUD.DebugPlug;
@@ -18,7 +17,7 @@ using SharpDX;
 using ImGuiVector2 = System.Numerics.Vector2;
 using ImGuiVector4 = System.Numerics.Vector4;
 
-namespace SithImGuiDev.Core
+namespace DeveloperTool.Core
 {
     public class SithImGuiDev : BaseSettingsPlugin<DevSettings>
     {
@@ -36,8 +35,6 @@ namespace SithImGuiDev.Core
         private DevSettings _settings;
         private long _uniqueIndex;
 
-        // Examples apps
-
         public SithImGuiDev() => PluginName = "Qvin Debug Tree";
 
         public override void Initialise()
@@ -54,8 +51,6 @@ namespace SithImGuiDev.Core
 
         private void DebugObjects()
         {
-            // Need to find offset for this level string
-            //_objectForDebug.Add(("Area Data", GameController.Files.WorldAreas.Translate("1_1_2")));
             _objectForDebug.Add(("LocalPlayer", GameController.Game.IngameState.Data.LocalPlayer));
             _objectForDebug.Add(("GameController", GameController));
             _objectForDebug.Add(("GameController.Game", GameController.Game));
@@ -87,7 +82,9 @@ namespace SithImGuiDev.Core
                 foreach (var rectangleF in _rectForDebug) Graphics.DrawFrame(rectangleF, 2, _clr);
                 ImGui.SetNextWindowPos(RenderDebugnextWindowPos, Condition.Appearing, new ImGuiVector2(1, 1));
                 ImGui.SetNextWindowSize(_renderDebugwindowSize, Condition.Appearing);
-                ImGui.BeginWindow("DebugTree");
+                var isOpen = Settings.ShowWindow.Value;
+                ImGui.BeginWindow("DebugTree", ref isOpen, WindowFlags.Default);
+                Settings.ShowWindow.Value = isOpen;
                 if (ImGui.Button("Clear##base")) _rectForDebug.Clear();
                 ImGui.SameLine();
                 ImGui.Checkbox("F1 for debug hover", ref _enableDebugHover);

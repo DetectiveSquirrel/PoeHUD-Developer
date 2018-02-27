@@ -7,8 +7,8 @@
     <ProjectGuid>{3AA04037-8522-4511-8558-5E74E09635D7}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>SithImGuiDev</RootNamespace>
-    <AssemblyName>SithImGuiDev</AssemblyName>
+    <RootNamespace>DeveloperTool</RootNamespace>
+    <AssemblyName>DeveloperTool</AssemblyName>
     <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
@@ -25,7 +25,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>..\..\..\PoE HUD #1\ImGUI\Release\plugins\ImGUI Dev\</OutputPath>
+    <OutputPath>..\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -45,6 +45,7 @@
     </Reference>
     <Reference Include="PoeHUD">
       <HintPath>..\..\PoeHUD.exe</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="SharpDX">
       <HintPath>..\..\..\PoE HUD #1\ImGUI\Release\SharpDX.dll</HintPath>
@@ -80,7 +81,7 @@
     </Reference>
     <Reference Include="System.ValueTuple, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>packages\System.ValueTuple.4.4.0\lib\net461\System.ValueTuple.dll</HintPath>
-      <Private>True</Private>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
@@ -95,8 +96,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Core\SithImGuiDev.cs" />
-    <Compile Include="Core\DevSettings.cs" />
+    <Compile Include="Core\Core.cs" />
+    <Compile Include="Core\Settings.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

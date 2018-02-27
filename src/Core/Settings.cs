@@ -1,7 +1,7 @@
 ﻿using PoeHUD.Hud.Settings;
 using PoeHUD.Plugins;
 
-namespace Developer_Tool
+namespace DeveloperTool.Core
 {
     public class DevSettings : SettingsBase
     {
@@ -10,7 +10,7 @@ namespace Developer_Tool
             ShowWindow = true;
         }
         
-        [Menu("Show Dev Window")]
+        [Menu("Show Developer Information")]
         public ToggleNode ShowWindow { get; set; }
     }
 }
