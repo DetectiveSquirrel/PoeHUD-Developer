@@ -268,11 +268,10 @@ namespace SithImGuiDev.Core
                                 }
 
                                 if (i > 500) break;
-                                if (ImGui.TreeNode($"Index: {i}##{i}{item.GetHashCode()}")) //Draw only index
+                                if (ImGui.TreeNode($"[{i}]##{i}{item.GetHashCode()}")) //Draw only index
                                 {
-
                                     ImGui.SameLine();
-                                    ImGui.Text($"{item}##{item}{item.GetHashCode()}", new ImGuiVector4(0.486f, 0.988f, 0, 1));
+                                    ImGui.Text($"{item}", new ImGuiVector4(0.486f, 0.988f, 0, 1));
                                     i++;
 
                                     DebugForImgui(item);
@@ -280,10 +279,8 @@ namespace SithImGuiDev.Core
                                 }
                                 else
                                 {
-
-
                                     ImGui.SameLine();
-                                    ImGui.Text($"{item}##{item}{item.GetHashCode()}", new ImGuiVector4(0.486f, 0.988f, 0, 1));
+                                    ImGui.Text($"{item}", new ImGuiVector4(0.486f, 0.988f, 0, 1));
                                     i++;
                                 }
                             }
