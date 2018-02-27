@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Reflection;
 using System.Windows.Forms;
 using DeveloperTool.Core;
@@ -195,9 +196,11 @@ namespace SithImGuiDev.Core
                         //ImGui.SameLine();
                         ImGui.PushStyleColor(ColorTarget.Text, new ImGuiVector4(1, 0.647f, 0, 1));
                         ImGui.PushStyleColor(ColorTarget.Button, new ImGuiVector4(0, 0, 0, 0));
+                        ImGui.PushStyleColor(ColorTarget.ButtonHovered, new ImGuiVector4(0, 0, 0, 1));
+                        ImGui.PushStyleColor(ColorTarget.ButtonActive, new ImGuiVector4(1, 1, 1, 1));
                         if (ImGui.SmallButton($"{o}##{o}{o.GetHashCode()}"))
                             ImGuiNative.igSetClipboardText(o.ToString());
-                        ImGui.PopStyleColor(2);
+                        ImGui.PopStyleColor(4);
                     }
                     else
                     {
