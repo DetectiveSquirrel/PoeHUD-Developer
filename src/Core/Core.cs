@@ -6,7 +6,6 @@ using System.Reflection;
 using System.Windows.Forms;
 using DeveloperTool.Core;
 using ImGuiNET;
-using PoeHUD.Controllers;
 using PoeHUD.DebugPlug;
 using PoeHUD.Framework;
 using PoeHUD.Framework.Helpers;
@@ -264,20 +263,29 @@ namespace SithImGuiDev.Core
                             {
                                 if (item == null)
                                 {
-                                    ImGui.Text($"Null", new ImGuiVector4(0.486f, 0.988f, 0, 1));
+                                    ImGui.Text("Null", new ImGuiVector4(0.486f, 0.988f, 0, 1));
                                     continue;
                                 }
 
                                 if (i > 500) break;
-                                if (ImGui.TreeNode($"Index: {i}")) //Draw only index
+                                if (ImGui.TreeNode($"Index: {i}##{i}{item.GetHashCode()}")) //Draw only index
                                 {
+
+                                    ImGui.SameLine();
+                                    ImGui.Text($"{item}##{item}{item.GetHashCode()}", new ImGuiVector4(0.486f, 0.988f, 0, 1));
+                                    i++;
+
                                     DebugForImgui(item);
                                     ImGui.TreePop();
                                 }
+                                else
+                                {
 
-                                ImGui.SameLine();
-                                ImGui.Text($"{item}", new ImGuiVector4(0.486f, 0.988f, 0, 1));
-                                i++;
+
+                                    ImGui.SameLine();
+                                    ImGui.Text($"{item}##{item}{item.GetHashCode()}", new ImGuiVector4(0.486f, 0.988f, 0, 1));
+                                    i++;
+                                }
                             }
 
                             ImGuiNative.igUnindent();
