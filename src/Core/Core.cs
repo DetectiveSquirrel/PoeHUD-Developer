@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Windows.Forms;
-using Developer_Tool;
+using DeveloperTool.Core;
 using ImGuiNET;
 using PoeHUD.Controllers;
 using PoeHUD.DebugPlug;
@@ -22,18 +22,16 @@ namespace SithImGuiDev.Core
 {
     public class Core : BaseSettingsPlugin<Settings>
     {
-        private static ImGuiVector2 _renderDebugwindowSize = new ImGuiVector2(784, API.GameController.Window.GetWindowRectangle().Height-129);
+        private static ImGuiVector2 _renderDebugwindowSize = new ImGuiVector2(784, API.GameController.Window.GetWindowRectangle().Height - 129);
         private static ImGuiVector2 _renderDebugwindowPos = new ImGuiVector2(593, 0);
         private static readonly ImGuiVector2 RenderDebugnextWindowPos = new ImGuiVector2(_renderDebugwindowSize.X + _renderDebugwindowPos.X, _renderDebugwindowSize.Y + _renderDebugwindowPos.Y);
         public static Core Instance;
+        private readonly List<(string name, object obj)> _objectForDebug = new List<(string name, object obj)>();
+        private readonly List<RectangleF> _rectForDebug = new List<RectangleF>();
         private Color _clr = Color.Pink;
         private Coroutine _coroutineRndColor;
         private bool _enableDebugHover;
-        private GameController _gameController;
-        private readonly List<(string name, object obj)> _objectForDebug = new List<(string name, object obj)>();
-        private readonly List<RectangleF> _rectForDebug = new List<RectangleF>();
         private Random _rnd;
-        private Settings _settings;
         private long _uniqueIndex;
 
         // Examples apps
@@ -44,9 +42,7 @@ namespace SithImGuiDev.Core
         {
             base.Initialise();
             Instance = this;
-            _gameController = GameController;
-            _settings = Settings;
-            _rnd = new Random((int) _gameController.MainTimer.ElapsedTicks);
+            _rnd = new Random((int) GameController.MainTimer.ElapsedTicks);
             _coroutineRndColor = new Coroutine(() => { _clr = new Color(_rnd.Next(255), _rnd.Next(255), _rnd.Next(255), 255); }, new WaitTime(200), nameof(Core), "Random Color").Run();
             _objectForDebug.Add(("LocalPlayer", GameController.Game.IngameState.Data.LocalPlayer));
             _objectForDebug.Add(("GameController", GameController));
@@ -63,7 +59,7 @@ namespace SithImGuiDev.Core
 
         private void RenderDebugInformation()
         {
-            if (_settings.ShowWindow)
+            if (Settings.ShowWindow)
             {
                 _uniqueIndex = 0;
                 if (_rectForDebug.Count == 0)
@@ -79,7 +75,7 @@ namespace SithImGuiDev.Core
                 ImGui.Checkbox("F1 for debug hover", ref _enableDebugHover);
                 if (_enableDebugHover && WinApi.IsKeyDown(Keys.F1))
                 {
-                    var uihover = _gameController.Game.IngameState.UIHover;
+                    var uihover = GameController.Game.IngameState.UIHover;
                     var formattable = $"Hover: {uihover} {uihover.Address}";
                     if (_objectForDebug.Any(x => x.name.Contains(formattable)))
                     {
@@ -119,8 +115,8 @@ namespace SithImGuiDev.Core
                     }
                     else
                     {
-                        ro = (Entity)obj;
-                        comp = ((Entity)obj).GetComponents();
+                        ro = (Entity) obj;
+                        comp = ((Entity) obj).GetComponents();
                     }
 
                     if (ImGui.TreeNode($"Components {comp.Count} ##{ro.GetHashCode()}"))
@@ -167,43 +163,26 @@ namespace SithImGuiDev.Core
                     ImGui.SameLine();
                     _uniqueIndex++;
                     if (ImGui.Button($"Draw this##{_uniqueIndex}"))
-                    {
                         _rectForDebug.Add(el1.GetClientRect());
-                    }
-
                     ImGui.SameLine();
                     _uniqueIndex++;
                     if (ImGui.Button($"Clear##from draw this{_uniqueIndex}")) _rectForDebug.Clear();
                 }
 
                 var oProp = obj.GetType().GetProperties(flags).Where(x => x.GetIndexParameters().Length == 0);
-                var ordered1 = oProp.OrderBy(x => x.PropertyType.GetInterfaces().Contains(typeof(IEnumerable)));//We want to show arrays and lists last
-
+                var ordered1 = oProp.OrderBy(x => x.PropertyType.GetInterfaces().Contains(typeof(IEnumerable))); //We want to show arrays and lists last
                 oProp = ordered1.ThenBy(x => x.Name).ToList();
                 foreach (var propertyInfo in oProp)
                 {
-
-                    if (propertyInfo.ReflectedType.IsSubclassOf(typeof(RemoteMemoryObject)))//We don't need to see this shit
-                    {
-                        if (propertyInfo.Name == "M" ||
-                            propertyInfo.Name == "Game" ||
-                            propertyInfo.Name == "Offsets")
+                    if (propertyInfo.ReflectedType.IsSubclassOf(typeof(RemoteMemoryObject))) //We don't need to see this shit
+                        if (propertyInfo.Name == "M" || propertyInfo.Name == "Game" || propertyInfo.Name == "Offsets")
                             continue;
-                    }
-
-                    if (propertyInfo.ReflectedType.IsSubclassOf(typeof(Component)))//...and this one too
-                    {
+                    if (propertyInfo.ReflectedType.IsSubclassOf(typeof(Component))) //...and this one too
                         if (propertyInfo.Name == "Owner")
                             continue;
-                    }
-
                     if (
-                        //propertyInfo.GetValue(obj, null).GetType().IsPrimitive  //Wanna get null or what?
-                        propertyInfo.PropertyType.IsPrimitive
-                     || propertyInfo.GetValue(obj, null) is decimal
-                     || propertyInfo.GetValue(obj, null) is string
-                     || propertyInfo.GetValue(obj, null) is TimeSpan
-                     || propertyInfo.GetValue(obj, null) is Enum)
+                            //propertyInfo.GetValue(obj, null).GetType().IsPrimitive  //Wanna get null or what?
+                            propertyInfo.PropertyType.IsPrimitive || propertyInfo.GetValue(obj, null) is decimal || propertyInfo.GetValue(obj, null) is string || propertyInfo.GetValue(obj, null) is TimeSpan || propertyInfo.GetValue(obj, null) is Enum)
                     {
                         ImGui.Text($"{propertyInfo.Name}: ");
                         ImGui.SameLine();
@@ -249,13 +228,12 @@ namespace SithImGuiDev.Core
                             }
 
                         if (!propertyInfo.PropertyType.GetInterfaces().Contains(typeof(IEnumerable))) continue;
-                        if (ImGui.TreeNode($"{propertyInfo.Name}:"))    //Hide arrays to tree node
+                        if (ImGui.TreeNode($"{propertyInfo.Name}:")) //Hide arrays to tree node
                         {
-                            var enumerable = (IEnumerable)o;
+                            var enumerable = (IEnumerable) o;
                             var items = enumerable as IList<object> ?? enumerable.Cast<object>().ToList();
-
                             var gArgs = o.GetType().GenericTypeArguments.ToList();
-                            if (gArgs.Any(x => x == typeof(Element) || x.IsSubclassOf(typeof(Element))))    //We need to draw it ONLY for UI Elements
+                            if (gArgs.Any(x => x == typeof(Element) || x.IsSubclassOf(typeof(Element)))) //We need to draw it ONLY for UI Elements
                             {
                                 _uniqueIndex++;
                                 if (ImGui.Button($"Draw Childs##{_uniqueIndex}"))
@@ -263,7 +241,7 @@ namespace SithImGuiDev.Core
                                     var tempi = 0;
                                     foreach (var item in items)
                                     {
-                                        var el = (Element)item;
+                                        var el = (Element) item;
                                         _rectForDebug.Add(el.GetClientRect());
                                         tempi++;
                                         if (tempi > 1000) break;
@@ -279,7 +257,6 @@ namespace SithImGuiDev.Core
                                 ImGui.SameLine();
                                 _uniqueIndex++;
                                 if (ImGui.Button($"Clear##from draw childs##{_uniqueIndex}")) _rectForDebug.Clear();
-
                             }
 
                             var i = 0;
@@ -290,24 +267,28 @@ namespace SithImGuiDev.Core
                                     ImGui.Text($"Null", new ImGuiVector4(0.486f, 0.988f, 0, 1));
                                     continue;
                                 }
+
                                 if (i > 500) break;
-                              
-                               
-                                if (ImGui.TreeNode($"Index: {i}"))//Draw only index
+                                if (ImGui.TreeNode($"Index: {i}")) //Draw only index
                                 {
                                     DebugForImgui(item);
                                     ImGui.TreePop();
                                 }
+
                                 ImGui.SameLine();
                                 ImGui.Text($"{item}", new ImGuiVector4(0.486f, 0.988f, 0, 1));
                                 i++;
                             }
+
                             ImGuiNative.igUnindent();
                         }
                     }
                 }
             }
-            catch (Exception e) { DebugPlugin.LogMsg($"Debug Tree: {e.ToString()}", 1); }
+            catch (Exception e)
+            {
+                DebugPlugin.LogMsg($"Debug Tree: {e}", 1);
+            }
         }
 
         private void DrawChilds(object obj, bool onlyVisible = false)
@@ -332,9 +313,7 @@ namespace SithImGuiDev.Core
             else
             {
                 if (obj is Element el)
-                {
                     _rectForDebug.Add(el.GetClientRect());
-                }
             }
         }
 
