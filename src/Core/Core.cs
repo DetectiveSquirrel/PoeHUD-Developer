@@ -163,11 +163,11 @@ namespace SithImGuiDev.Core
                 {
                     ImGui.SameLine();
                     _uniqueIndex++;
-                    if (ImGui.Button($"Draw this##{_uniqueIndex}"))
+                    if (ImGui.SmallButton($"Draw this##{_uniqueIndex}"))
                         _rectForDebug.Add(el1.GetClientRect());
                     ImGui.SameLine();
                     _uniqueIndex++;
-                    if (ImGui.Button($"Clear##from draw this{_uniqueIndex}")) _rectForDebug.Clear();
+                    if (ImGui.SmallButton($"Clear##from draw this{_uniqueIndex}")) _rectForDebug.Clear();
                 }
 
                 var oProp = obj.GetType().GetProperties(flags).Where(x => x.GetIndexParameters().Length == 0);
@@ -206,7 +206,11 @@ namespace SithImGuiDev.Core
                         var o = propertyInfo.GetValue(obj, null);
                         if (o == null)
                         {
-                            ImGui.Text(label + ": Null");
+                            ImGui.Text(label + ": ");
+                            ImGui.SameLine(0f, 0f);
+                            ImGui.PushStyleColor(ColorTarget.Text, new ImGuiVector4(1, 0.366f, 0.366f, 1));
+                            ImGui.Text("Null");
+                            ImGui.PopStyleColor(1);
                             continue;
                         }
 
