@@ -197,113 +197,128 @@ namespace SithImGuiDev.Core
                             continue;
                     }
 
-                    if (
-                        //propertyInfo.GetValue(obj, null).GetType().IsPrimitive  //Wanna get null or what?
-                        propertyInfo.PropertyType.IsPrimitive
-                     || propertyInfo.GetValue(obj, null) is decimal
-                     || propertyInfo.GetValue(obj, null) is string
-                     || propertyInfo.GetValue(obj, null) is TimeSpan
-                     || propertyInfo.GetValue(obj, null) is Enum)
+                    try
                     {
-                        ImGui.Text($"{propertyInfo.Name}: ");
-                        ImGui.SameLine();
-                        var o = propertyInfo.GetValue(obj, null);
-                        if (propertyInfo.Name.Contains("Address"))
-                            o = Convert.ToInt64(o).ToString("X");
-                        ImGui.Text($"{o}", new ImGuiVector4(1, 0.647f, 0, 1));
-                        //if (!propertyInfo.Name.Contains("Address")) continue; //We want to copy any thing we need
-                        ImGui.SameLine();
-                        if (ImGui.SmallButton($"Copy##{o}")) ImGuiNative.igSetClipboardText(o.ToString());
-                    }
-                    else
-                    {
-                        var label = propertyInfo.Name;
-                        var o = propertyInfo.GetValue(obj, null);
-                        if (o == null)
+                        var value = propertyInfo.GetValue(obj, null);
+                        if (
+                            //propertyInfo.GetValue(obj, null).GetType().IsPrimitive  //Wanna get null or what?
+                            propertyInfo.PropertyType.IsPrimitive
+                         || value is decimal
+                         || value is string
+                         || value is TimeSpan
+                         || value is Enum)
                         {
-                            ImGui.Text(label + ": Null");
-                            continue;
+                            ImGui.Text($"{propertyInfo.Name}: ");
+                            ImGui.SameLine();
+                            var o = propertyInfo.GetValue(obj, null);
+                            if (propertyInfo.Name.Contains("Address"))
+                                o = Convert.ToInt64(o).ToString("X");
+                            ImGui.Text($"{o}", new ImGuiVector4(1, 0.647f, 0, 1));
+                            //if (!propertyInfo.Name.Contains("Address")) continue; //We want to copy any thing we need
+                            ImGui.SameLine();
+                            if (ImGui.SmallButton($"Copy##{o}")) ImGuiNative.igSetClipboardText(o.ToString());
                         }
-
-                        if (label.Contains("Framework") || label.Contains("Offsets"))
-                            continue;
-                        if (!propertyInfo.PropertyType.GetInterfaces().Contains(typeof(IEnumerable)))
-                            if (ImGui.TreeNode(label))
-                            {
-                                _uniqueIndex++;
-                                ImGui.SameLine();
-                                if (ImGui.SmallButton($"Debug this##{_uniqueIndex}"))
-                                {
-                                    var formattable = $"{label}->{o}";
-                                    if (_objectForDebug.Any(x => x.name.Contains(formattable)))
-                                    {
-                                        var findIndex = _objectForDebug.FindIndex(x => x.name.Contains(formattable));
-                                        _objectForDebug[findIndex] = (formattable + "^", o);
-                                    }
-                                    else
-                                        _objectForDebug.Add((formattable, o));
-                                }
-
-                                DebugForImgui(o);
-                                ImGui.TreePop();
-                            }
-
-                        if (!propertyInfo.PropertyType.GetInterfaces().Contains(typeof(IEnumerable))) continue;
-                        if (ImGui.TreeNode($"{propertyInfo.Name}:"))    //Hide arrays to tree node
+                        else
                         {
-                            var enumerable = (IEnumerable)o;
-                            var items = enumerable as IList<object> ?? enumerable.Cast<object>().ToList();
-
-                            var gArgs = o.GetType().GenericTypeArguments.ToList();
-                            if (gArgs.Any(x => x == typeof(Element) || x.IsSubclassOf(typeof(Element))))    //We need to draw it ONLY for UI Elements
+                            var label = propertyInfo.Name;
+                            var o = propertyInfo.GetValue(obj, null);
+                            if (o == null)
                             {
-                                _uniqueIndex++;
-                                if (ImGui.Button($"Draw Childs##{_uniqueIndex}"))
-                                {
-                                    var tempi = 0;
-                                    foreach (var item in items)
-                                    {
-                                        var el = (Element)item;
-                                        _rectForDebug.Add(el.GetClientRect());
-                                        tempi++;
-                                        if (tempi > 1000) break;
-                                    }
-                                }
-
-                                ImGui.SameLine();
-                                _uniqueIndex++;
-                                if (ImGui.Button($"Draw Childs for Childs##{_uniqueIndex}")) DrawChilds(items);
-                                ImGui.SameLine();
-                                _uniqueIndex++;
-                                if (ImGui.Button($"Draw Childs for Childs Only Visible##{_uniqueIndex}")) DrawChilds(items, true);
-                                ImGui.SameLine();
-                                _uniqueIndex++;
-                                if (ImGui.Button($"Clear##from draw childs##{_uniqueIndex}")) _rectForDebug.Clear();
-
+                                ImGui.Text(label + ": Null");
+                                continue;
                             }
 
-                            var i = 0;
-                            foreach (var item in items)
+                            if (label.Contains("Framework") || label.Contains("Offsets"))
+                                continue;
+                            if (!propertyInfo.PropertyType.GetInterfaces().Contains(typeof(IEnumerable)))
                             {
-                                if (item == null)
+                                if (ImGui.TreeNode(label))
                                 {
-                                    ImGui.Text($"Null", new ImGuiVector4(0.486f, 0.988f, 0, 1));
-                                    continue;
-                                }
-                                if (i > 500) break;
-                              
-                               
-                                if (ImGui.TreeNode($"Index: {i}"))//Draw only index
-                                {
-                                    DebugForImgui(item);
+                                    _uniqueIndex++;
+                                    ImGui.SameLine();
+                                    if (ImGui.SmallButton($"Debug this##{_uniqueIndex}"))
+                                    {
+                                        var formattable = $"{label}->{o}";
+                                        if (_objectForDebug.Any(x => x.name.Contains(formattable)))
+                                        {
+                                            var findIndex = _objectForDebug.FindIndex(x => x.name.Contains(formattable));
+                                            _objectForDebug[findIndex] = (formattable + "^", o);
+                                        }
+                                        else
+                                            _objectForDebug.Add((formattable, o));
+                                    }
+
+                                    ImGuiNative.igIndent();
+                                    DebugForImgui(o);
+                                    ImGuiNative.igUnindent();
                                     ImGui.TreePop();
                                 }
-                                ImGui.SameLine();
-                                ImGui.Text($"{item}", new ImGuiVector4(0.486f, 0.988f, 0, 1));
-                                i++;
+                                continue;
                             }
-                            ImGuiNative.igUnindent();
+
+                            if (ImGui.TreeNode($"{propertyInfo.Name}:"))    //Hide arrays to tree node
+                            {
+                                var enumerable = (IEnumerable)o;
+                                var items = enumerable as IList<object> ?? enumerable.Cast<object>().ToList();
+
+                                var gArgs = o.GetType().GenericTypeArguments.ToList();
+                                if (gArgs.Any(x => x == typeof(Element) || x.IsSubclassOf(typeof(Element))))    //We need to draw it ONLY for UI Elements
+                                {
+                                    _uniqueIndex++;
+                                    if (ImGui.Button($"Draw Childs##{_uniqueIndex}"))
+                                    {
+                                        var tempi = 0;
+                                        foreach (var item in items)
+                                        {
+                                            var el = (Element)item;
+                                            _rectForDebug.Add(el.GetClientRect());
+                                            tempi++;
+                                            if (tempi > 1000) break;
+                                        }
+                                    }
+
+                                    ImGui.SameLine();
+                                    _uniqueIndex++;
+                                    if (ImGui.Button($"Draw Childs for Childs##{_uniqueIndex}")) DrawChilds(items);
+                                    ImGui.SameLine();
+                                    _uniqueIndex++;
+                                    if (ImGui.Button($"Draw Childs for Childs Only Visible##{_uniqueIndex}")) DrawChilds(items, true);
+                                    ImGui.SameLine();
+                                    _uniqueIndex++;
+                                    if (ImGui.Button($"Clear##from draw childs##{_uniqueIndex}")) _rectForDebug.Clear();
+
+                                }
+
+                                var i = 0;
+                                foreach (var item in items)
+                                {
+                                    if (item == null)
+                                    {
+                                        ImGui.Text($"Null", new ImGuiVector4(0.486f, 0.988f, 0, 1));
+                                        continue;
+                                    }
+                                    if (i > 500) break;
+
+
+                                    if (ImGui.TreeNode($"Index: {i}"))//Draw only index
+                                    {
+                                        DebugForImgui(item);
+                                        ImGui.TreePop();
+                                    }
+                                    else
+                                    {
+                                        ImGui.SameLine();
+                                        ImGui.Text($"{item}", new ImGuiVector4(0.486f, 0.988f, 0, 1));
+                                    }
+                                    i++;
+                                }
+                                ImGuiNative.igUnindent();
+                            }
                         }
+                    }
+                    catch (Exception ex)
+                    {
+                        ImGui.Text($"Error reading property: {propertyInfo.Name}, Error: {ex.ToString()}", new ImGuiVector4(1, 0, 0, 1));
                     }
                 }
             }
