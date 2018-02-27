@@ -20,7 +20,7 @@ using ImGuiVector4 = System.Numerics.Vector4;
 
 namespace SithImGuiDev.Core
 {
-    public class Core : BaseSettingsPlugin<DevSettings>
+    public class Core : BaseSettingsPlugin<Settings>
     {
         private static ImGuiVector2 _renderDebugwindowSize = new ImGuiVector2(784, API.GameController.Window.GetWindowRectangle().Height-129);
         private static ImGuiVector2 _renderDebugwindowPos = new ImGuiVector2(593, 0);
@@ -33,7 +33,7 @@ namespace SithImGuiDev.Core
         private readonly List<(string name, object obj)> _objectForDebug = new List<(string name, object obj)>();
         private readonly List<RectangleF> _rectForDebug = new List<RectangleF>();
         private Random _rnd;
-        private DevSettings _settings;
+        private Settings _settings;
         private long _uniqueIndex;
 
         // Examples apps
