@@ -186,14 +186,12 @@ namespace SithImGuiDev.Core
                             propertyInfo.PropertyType.IsPrimitive || propertyInfo.GetValue(obj, null) is decimal || propertyInfo.GetValue(obj, null) is string || propertyInfo.GetValue(obj, null) is TimeSpan || propertyInfo.GetValue(obj, null) is Enum)
                     {
                         ImGui.Text($"{propertyInfo.Name}: ");
-                        ImGui.SameLine();
+                        ImGui.SameLine(0f, 0f);
                         var o = propertyInfo.GetValue(obj, null);
                         if (propertyInfo.Name.Contains("Address"))
                             o = Convert.ToInt64(o).ToString("X");
-                        //ImGui.Text($"{o}", new ImGuiVector4(1, 0.647f, 0, 1));
                         //if (!propertyInfo.Name.Contains("Address")) continue; //We want to copy any thing we need
 
-                        //ImGui.SameLine();
                         ImGui.PushStyleColor(ColorTarget.Text, new ImGuiVector4(1, 0.647f, 0, 1));
                         ImGui.PushStyleColor(ColorTarget.Button, new ImGuiVector4(0, 0, 0, 0));
                         ImGui.PushStyleColor(ColorTarget.ButtonHovered, new ImGuiVector4(0, 0, 0, 1));
