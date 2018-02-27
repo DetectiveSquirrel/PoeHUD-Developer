@@ -16,6 +16,7 @@ using PoeHUD.Poe;
 using SharpDX;
 using ImGuiVector2 = System.Numerics.Vector2;
 using ImGuiVector4 = System.Numerics.Vector4;
+using Vector3 = System.Numerics.Vector3;
 
 namespace SithImGuiDev.Core
 {
@@ -188,10 +189,15 @@ namespace SithImGuiDev.Core
                         var o = propertyInfo.GetValue(obj, null);
                         if (propertyInfo.Name.Contains("Address"))
                             o = Convert.ToInt64(o).ToString("X");
-                        ImGui.Text($"{o}", new ImGuiVector4(1, 0.647f, 0, 1));
+                        //ImGui.Text($"{o}", new ImGuiVector4(1, 0.647f, 0, 1));
                         //if (!propertyInfo.Name.Contains("Address")) continue; //We want to copy any thing we need
-                        ImGui.SameLine();
-                        if (ImGui.SmallButton($"Copy##{o}")) ImGuiNative.igSetClipboardText(o.ToString());
+
+                        //ImGui.SameLine();
+                        ImGui.PushStyleColor(ColorTarget.Text, new ImGuiVector4(1, 0.647f, 0, 1));
+                        ImGui.PushStyleColor(ColorTarget.Button, new ImGuiVector4(0, 0, 0, 0));
+                        if (ImGui.SmallButton($"{o}##{o}{o.GetHashCode()}"))
+                            ImGuiNative.igSetClipboardText(o.ToString());
+                        ImGui.PopStyleColor(2);
                     }
                     else
                     {
