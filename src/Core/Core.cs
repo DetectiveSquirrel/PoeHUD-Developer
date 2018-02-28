@@ -98,10 +98,7 @@ namespace DeveloperTool.Core
         private void RenderNearestObjectsDebug()
         {
             if (Settings.DebugNearestEnts.PressedOnce())
-            {
                 AddNearestObjectsDebug();
-            }
-
             foreach (var ent in _nearbyObjectForDebug)
             {
                 if (!ent.name.StartsWith(EntDebugPrefix)) continue;
@@ -122,97 +119,98 @@ namespace DeveloperTool.Core
 
         private void RenderDebugInformation()
         {
-            if (_settings.ShowWindow)
+            _uniqueIndex = 0;
+            var idPop = 1;
+            if (_rectForDebug.Count == 0)
+                _coroutineRndColor.Pause();
+            else
+                _coroutineRndColor.Resume();
+            foreach (var rectangleF in _rectForDebug) Graphics.DrawFrame(rectangleF, 2, _clr);
+            if (!Settings.ShowWindow) return;
+            var isOpened = Settings.ShowWindow.Value;
+            ImGuiExtension.BeginWindow($"{PluginName} Settings", ref isOpened, Settings.LastSettingPos.X, Settings.LastSettingPos.Y, Settings.LastSettingSize.X, Settings.LastSettingSize.Y);
+            Settings.ShowWindow.Value = isOpened;
+            if (ImGui.GetWindowHeight() < 35)
             {
-                _uniqueIndex = 0;
-                var idPop = 1;
-                if (_rectForDebug.Count == 0)
-                    _coroutineRndColor.Pause();
-                else
-                    _coroutineRndColor.Resume();
-                foreach (var rectangleF in _rectForDebug) Graphics.DrawFrame(rectangleF, 2, _clr);
-                var isOpened = Settings.ShowWindow.Value;
-                ImGuiExtension.BeginWindow($"{PluginName} Settings", ref isOpened, Settings.LastSettingPos.X, Settings.LastSettingPos.Y, Settings.LastSettingSize.X, Settings.LastSettingSize.Y);
-                Settings.ShowWindow.Value = isOpened;
-                ImGui.PushStyleVar(StyleVar.ChildRounding, 5.0f);
-                ImGuiExtension.ImGuiExtension_ColorTabs("LeftSettings", 35, SettingName, ref Selected, ref idPop);
-                ImGuiNative.igGetContentRegionAvail(out var newcontentRegionArea);
-                if (ImGui.BeginChild("RightSettings", new ImGuiVector2(newcontentRegionArea.X, newcontentRegionArea.Y), true, WindowFlags.Default))
-                    switch (SettingName[Selected])
-                    {
-                        case "Main":
-                            if (ImGui.Button("Clear Debug Rectangles##base")) _rectForDebug.Clear();
-                            ImGui.SameLine();
-                            if (ImGui.Button("Clear Debug Objects##base"))
+                // This fixes issue where minimizing the window causes a crash
+                ImGui.EndWindow();
+                return;
+            }
+
+            ImGui.PushStyleVar(StyleVar.ChildRounding, 5.0f);
+            ImGuiExtension.ImGuiExtension_ColorTabs("LeftSettings", 35, SettingName, ref Selected, ref idPop);
+            ImGuiNative.igGetContentRegionAvail(out var newcontentRegionArea);
+            if (ImGui.BeginChild("RightSettings", new ImGuiVector2(newcontentRegionArea.X, newcontentRegionArea.Y), true, WindowFlags.Default))
+                switch (SettingName[Selected])
+                {
+                    case "Main":
+                        if (ImGui.Button("Clear Debug Rectangles##base")) _rectForDebug.Clear();
+                        ImGui.SameLine();
+                        if (ImGui.Button("Clear Debug Objects##base"))
+                        {
+                            _objectForDebug.Clear();
+                            _nearbyObjectForDebug.Clear();
+                            AddDefualtDebugObjects(false);
+                        }
+
+                        ImGui.SameLine();
+                        ImGui.Checkbox("F1 To Debug HoverUI", ref _enableDebugHover);
+                        if (_enableDebugHover && WinApi.IsKeyDown(Keys.F1))
+                        {
+                            var uihover = _gameController.Game.IngameState.UIHover;
+                            var formattable = $"Hover: {uihover} {uihover.Address}";
+                            if (_objectForDebug.Any(x => x.name.Contains(formattable)))
                             {
-                                _objectForDebug.Clear();
-                                _nearbyObjectForDebug.Clear();
-                                AddDefualtDebugObjects(false);
+                                var findIndex = _objectForDebug.FindIndex(x => x.name.Contains(formattable));
+                                _objectForDebug[findIndex] = (formattable + "^", uihover);
+                            }
+                            else
+                                _objectForDebug.Add((formattable, uihover));
+                        }
+
+                        for (var i = 0; i < _objectForDebug.Count; i++)
+                            if (ImGui.TreeNode($"{_objectForDebug[i].name}"))
+                            {
+                                ImGuiNative.igIndent();
+                                DebugForImgui(_objectForDebug[i].obj);
+                                ImGuiNative.igUnindent();
+                                ImGui.TreePop();
                             }
 
-                            ImGui.SameLine();
-                            ImGui.Checkbox("F1 To Debug HoverUI", ref _enableDebugHover);
-                            if (_enableDebugHover && WinApi.IsKeyDown(Keys.F1))
-                            {
-                                var uihover = _gameController.Game.IngameState.UIHover;
-                                var formattable = $"Hover: {uihover} {uihover.Address}";
-                                if (_objectForDebug.Any(x => x.name.Contains(formattable)))
-                                {
-                                    var findIndex = _objectForDebug.FindIndex(x => x.name.Contains(formattable));
-                                    _objectForDebug[findIndex] = (formattable + "^", uihover);
-                                }
-                                else
-                                    _objectForDebug.Add((formattable, uihover));
-                            }
-
-                            for (var i = 0; i < _objectForDebug.Count; i++)
-                                if (ImGui.TreeNode($"{_objectForDebug[i].name}"))
+                        if (ImGui.TreeNode($"{NearbyObjectDebugPrefix} [{_nearbyObjectForDebug.Count}]"))
+                        {
+                            NearObjectsToDebugButton();
+                            for (var i = 0; i < _nearbyObjectForDebug.Count; i++)
+                                if (ImGui.TreeNode($"{_nearbyObjectForDebug[i].name}"))
                                 {
                                     ImGuiNative.igIndent();
-                                    DebugForImgui(_objectForDebug[i].obj);
+                                    DebugForImgui(_nearbyObjectForDebug[i].obj);
                                     ImGuiNative.igUnindent();
                                     ImGui.TreePop();
                                 }
 
-                            if (ImGui.TreeNode($"{NearbyObjectDebugPrefix} [{_nearbyObjectForDebug.Count}]"))
-                            {
-                                NearObjectsToDebugButton();
-                                for (var i = 0; i < _nearbyObjectForDebug.Count; i++)
-                                    if (ImGui.TreeNode($"{_nearbyObjectForDebug[i].name}"))
-                                    {
-                                        ImGuiNative.igIndent();
-                                        DebugForImgui(_nearbyObjectForDebug[i].obj);
-                                        ImGuiNative.igUnindent();
-                                        ImGui.TreePop();
-                                    }
+                            ImGui.TreePop();
+                        }
+                        else
+                            NearObjectsToDebugButton();
 
-                                ImGui.TreePop();
-                            }
-                            else
-                            {
-                                NearObjectsToDebugButton();
-                            }
-
-                            break;
-                        case "Settings":
-                            Settings.DebugNearestEnts.Value = ImGuiExtension.HotkeySelector("Debug Nearest Entities", Settings.DebugNearestEnts.Value);
-                            Settings.NearestEntsRange.Value = ImGuiExtension.IntSlider("Entity Debug Range", Settings.NearestEntsRange);
-                            break;
-                    }
-                ImGui.EndChild();
-                ImGui.PopStyleVar();
-
-                // Storing window Position and Size changed by the user
-                if (ImGui.GetWindowHeight() > 21)
-                {
-                    Settings.LastSettingPos = ImGui.GetWindowPosition();
-                    Settings.LastSettingSize = ImGui.GetWindowSize();
+                        break;
+                    case "Settings":
+                        Settings.DebugNearestEnts.Value = ImGuiExtension.HotkeySelector("Debug Nearest Entities", Settings.DebugNearestEnts.Value);
+                        Settings.NearestEntsRange.Value = ImGuiExtension.IntSlider("Entity Debug Range", Settings.NearestEntsRange);
+                        break;
                 }
+            ImGui.PopStyleVar();
+            ImGui.EndChild();
 
-                ImGui.EndWindow();
+            // Storing window Position and Size changed by the user
+            if (ImGui.GetWindowHeight() > 21)
+            {
+                Settings.LastSettingPos = ImGui.GetWindowPosition();
+                Settings.LastSettingSize = ImGui.GetWindowSize();
             }
-            else
-                _coroutineRndColor.Pause();
+
+            ImGui.EndWindow();
         }
 
         public void NearObjectsToDebugButton()
