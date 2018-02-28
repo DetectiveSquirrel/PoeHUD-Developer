@@ -7,8 +7,8 @@
     <ProjectGuid>{3AA04037-8522-4511-8558-5E74E09635D7}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>SithImGuiDev</RootNamespace>
-    <AssemblyName>SithImGuiDev</AssemblyName>
+    <RootNamespace>DeveloperTool</RootNamespace>
+    <AssemblyName>DeveloperTool</AssemblyName>
     <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
