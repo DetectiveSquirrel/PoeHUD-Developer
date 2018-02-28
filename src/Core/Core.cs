@@ -80,7 +80,7 @@ namespace DeveloperTool.Core
             _objectForDebug.Insert(2, (GameDebugName, GameController.Game));
             _objectForDebug.Insert(3, (IngameUiDebugName, GameController.Game.IngameState.IngameUi));
             _objectForDebug.Insert(4, (UiRootDebugName, GameController.Game.IngameState.UIRoot));
-            _objectForDebug.Insert(4, (ServerDataDebugName, GameController.Game.IngameState.ServerData));
+            _objectForDebug.Insert(5, (ServerDataDebugName, GameController.Game.IngameState.ServerData));
         }
 
         public override void Render()
