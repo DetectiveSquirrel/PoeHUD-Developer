@@ -23,7 +23,7 @@ namespace DeveloperTool.Core
 {
     public class Core : BaseSettingsPlugin<Settings>
     {
-        private const string EntDebugPrefix = "EntDebug:";
+        private const string EntDebugPrefix = "EntDebug";
         private const string LocalPlayerDebugName = "LocalPlayer";
         private const string GameControllerDebugName = "GameController";
         private const string GameDebugName = "GameController.Game";
@@ -97,7 +97,7 @@ namespace DeveloperTool.Core
                 foreach (var ent in entsToDebug)
                 {
                     if (_objectForDebug.Any(x => Equals(x.obj, ent))) continue;
-                    _objectForDebug.Add(($"{EntDebugPrefix} [{_objectForDebug.Count}] {ent.Address:x}, {ent.Path}", ent));
+                    _objectForDebug.Add(($"{EntDebugPrefix} [{_objectForDebug.Count}], {ent.Path}", ent));
                 }
             }
 
@@ -380,7 +380,7 @@ namespace DeveloperTool.Core
                                     }
 
                                     if (i > 500) break;
-                                    if (ImGui.TreeNode($"Index: {i}")) //Draw only index
+                                    if (ImGui.TreeNode($"[{i}]")) //Draw only index
                                     {
                                         DebugForImgui(item);
                                         ImGui.TreePop();
