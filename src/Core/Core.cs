@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Reflection;
 using System.Windows.Forms;
 using DeveloperTool.Libs;
@@ -18,6 +19,7 @@ using SharpDX;
 using SharpDX.Direct3D9;
 using ImGuiVector2 = System.Numerics.Vector2;
 using ImGuiVector4 = System.Numerics.Vector4;
+using Vector3 = SharpDX.Vector3;
 
 namespace DeveloperTool.Core
 {
@@ -130,13 +132,6 @@ namespace DeveloperTool.Core
             var isOpened = Settings.ShowWindow.Value;
             ImGuiExtension.BeginWindow($"{PluginName} Settings", ref isOpened, Settings.LastSettingPos.X, Settings.LastSettingPos.Y, Settings.LastSettingSize.X, Settings.LastSettingSize.Y);
             Settings.ShowWindow.Value = isOpened;
-            if (ImGui.GetWindowHeight() < 35)
-            {
-                // This fixes issue where minimizing the window causes a crash
-                ImGui.EndWindow();
-                return;
-            }
-
             ImGui.PushStyleVar(StyleVar.ChildRounding, 5.0f);
             ImGuiExtension.ImGuiExtension_ColorTabs("LeftSettings", 35, SettingName, ref Selected, ref idPop);
             ImGuiNative.igGetContentRegionAvail(out var newcontentRegionArea);

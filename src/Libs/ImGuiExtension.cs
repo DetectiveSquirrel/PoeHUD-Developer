@@ -279,10 +279,8 @@ namespace DeveloperTool.Libs
         {
             ImGuiNative.igGetContentRegionAvail(out var newcontentRegionArea);
             var boxRegion = new ImGuiVector2(newcontentRegionArea.X, height);
-            if (ImGui.BeginChild(idString, boxRegion, true, WindowFlags.HorizontalScrollbar))
+            if (ImGui.BeginChild(idString, boxRegion, true, WindowFlags.Default))
             {
-                ImGui.PushStyleVar(StyleVar.FrameRounding, 3.0f);
-                ImGui.PushStyleVar(StyleVar.FramePadding, 2.0f);
                 for (var i = 0; i < settingList.Count; i++)
                 {
                     ImGui.PushID(uniqueIdPop);
@@ -290,15 +288,17 @@ namespace DeveloperTool.Libs
                     ImGui.PushStyleColor(ColorTarget.Button, ImColor_HSV(hue, 0.6f, 0.6f, 0.8f));
                     ImGui.PushStyleColor(ColorTarget.ButtonHovered, ImColor_HSV(hue, 0.7f, 0.7f, 0.9f));
                     ImGui.PushStyleColor(ColorTarget.ButtonActive, ImColor_HSV(hue, 0.8f, 0.8f, 1.0f));
-                    ImGui.SameLine();
+                    ImGui.PushStyleVar(StyleVar.FrameRounding, 3.0f);
+                    ImGui.PushStyleVar(StyleVar.FramePadding, 2.0f);
+                    if (i > 0) ImGui.SameLine();
                     if (ImGui.Button(settingList[i])) selectedItem = i;
                     uniqueIdPop++;
-                    ImGui.PopID();
+                    ImGui.PopStyleVar();
                     ImGui.PopStyleColor(3);
+                    ImGui.PopID();
                 }
-            }
 
-            ImGui.PopStyleVar();
+            }
             ImGui.EndChild();
         }
     }
