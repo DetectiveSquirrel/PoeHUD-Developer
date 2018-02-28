@@ -15,36 +15,41 @@ using PoeHUD.Models.Interfaces;
 using PoeHUD.Plugins;
 using PoeHUD.Poe;
 using SharpDX;
+using SharpDX.Direct3D9;
 using ImGuiVector2 = System.Numerics.Vector2;
 using ImGuiVector4 = System.Numerics.Vector4;
-using SharpDX.Direct3D9;
 
 namespace DeveloperTool.Core
 {
     public class Core : BaseSettingsPlugin<Settings>
     {
         private const string EntDebugPrefix = "EntDebug";
+        private const string NearbyObjectDebugPrefix = "Nearby Objects For Debug";
         private const string LocalPlayerDebugName = "LocalPlayer";
         private const string GameControllerDebugName = "GameController";
         private const string GameDebugName = "GameController.Game";
         private const string IngameUiDebugName = "IngameUi";
         private const string UiRootDebugName = "UIRoot";
         private const string ServerDataDebugName = "ServerData";
-        private static ImGuiVector2 _renderDebugwindowSize = new ImGuiVector2(784, API.GameController.Window.GetWindowRectangle().Height - 129);
-        private static ImGuiVector2 _renderDebugwindowPos = new ImGuiVector2(593, 0);
-        private static readonly ImGuiVector2 RenderDebugnextWindowPos = new ImGuiVector2(_renderDebugwindowSize.X + _renderDebugwindowPos.X, _renderDebugwindowSize.Y + _renderDebugwindowPos.Y);
         public static Core Instance;
+        public static int Selected;
+
+        public static string[] SettingName =
+        {
+                "Main",
+                "Settings"
+        };
+
+        private readonly List<(string name, object obj)> _nearbyObjectForDebug = new List<(string name, object obj)>();
+        private readonly List<(string name, object obj)> _objectForDebug = new List<(string name, object obj)>();
+        private readonly List<RectangleF> _rectForDebug = new List<RectangleF>();
         private Color _clr = Color.Pink;
         private Coroutine _coroutineRndColor;
         private bool _enableDebugHover;
         private GameController _gameController;
-        private readonly List<(string name, object obj)> _objectForDebug = new List<(string name, object obj)>();
-        private readonly List<RectangleF> _rectForDebug = new List<RectangleF>();
         private Random _rnd;
         private Settings _settings;
         private long _uniqueIndex;
-        public static int Selected;
-        public static string[] SettingName = { "Main", "Settings" };
 
         public Core() => PluginName = "Qvin Debug Tree";
 
@@ -63,17 +68,8 @@ namespace DeveloperTool.Core
 
         private void AddDefualtDebugObjects(bool removeOld)
         {
-            if(removeOld)
-            {
-                _objectForDebug.RemoveAll(x =>
-                x.name == LocalPlayerDebugName ||
-                x.name == GameControllerDebugName ||
-                x.name == GameDebugName ||
-                x.name == IngameUiDebugName ||
-                x.name == UiRootDebugName ||
-                x.name == ServerDataDebugName);
-            }
-
+            if (removeOld)
+                _objectForDebug.RemoveAll(x => x.name == LocalPlayerDebugName || x.name == GameControllerDebugName || x.name == GameDebugName || x.name == IngameUiDebugName || x.name == UiRootDebugName || x.name == ServerDataDebugName);
             _objectForDebug.Insert(0, (LocalPlayerDebugName, GameController.Game.IngameState.Data.LocalPlayer));
             _objectForDebug.Insert(1, (GameControllerDebugName, GameController));
             _objectForDebug.Insert(2, (GameDebugName, GameController.Game));
@@ -96,12 +92,12 @@ namespace DeveloperTool.Core
                 var entsToDebug = GameController.EntityListWrapper.Entities.Where(x => Vector3.Distance(x.Pos, playerPos) < Settings.NearestEntsRange.Value).ToList();
                 foreach (var ent in entsToDebug)
                 {
-                    if (_objectForDebug.Any(x => Equals(x.obj, ent))) continue;
-                    _objectForDebug.Add(($"{EntDebugPrefix} [{_objectForDebug.Count}], {ent.Path}", ent));
+                    if (_nearbyObjectForDebug.Any(x => Equals(x.obj, ent))) continue;
+                    _nearbyObjectForDebug.Add(($"{EntDebugPrefix} [{_nearbyObjectForDebug.Count + 1}], {ent.Path}", ent));
                 }
             }
 
-            foreach (var ent in _objectForDebug)
+            foreach (var ent in _nearbyObjectForDebug)
             {
                 if (!ent.name.StartsWith(EntDebugPrefix)) continue;
                 var entWrapper = ent.obj as EntityWrapper;
@@ -140,16 +136,17 @@ namespace DeveloperTool.Core
                     switch (SettingName[Selected])
                     {
                         case "Main":
-                            if (ImGui.Button("Clear Debug Rects##base")) _rectForDebug.Clear();
+                            if (ImGui.Button("Clear Debug Rectangles##base")) _rectForDebug.Clear();
                             ImGui.SameLine();
-                            if (ImGui.Button("Clear Debug Obj##base"))
+                            if (ImGui.Button("Clear Debug Objects##base"))
                             {
                                 _objectForDebug.Clear();
+                                _nearbyObjectForDebug.Clear();
                                 AddDefualtDebugObjects(false);
                             }
 
                             ImGui.SameLine();
-                            ImGui.Checkbox("F1 for debug hover", ref _enableDebugHover);
+                            ImGui.Checkbox("F1 To Debug HoverUI", ref _enableDebugHover);
                             if (_enableDebugHover && WinApi.IsKeyDown(Keys.F1))
                             {
                                 var uihover = _gameController.Game.IngameState.UIHover;
@@ -172,6 +169,20 @@ namespace DeveloperTool.Core
                                     ImGui.TreePop();
                                 }
 
+                            if (ImGui.TreeNode($"{NearbyObjectDebugPrefix} [{_nearbyObjectForDebug.Count}]"))
+                            {
+                                for (var i = 0; i < _nearbyObjectForDebug.Count; i++)
+                                    if (ImGui.TreeNode($"{_nearbyObjectForDebug[i].name}"))
+                                    {
+                                        ImGuiNative.igIndent();
+                                        DebugForImgui(_nearbyObjectForDebug[i].obj);
+                                        ImGuiNative.igUnindent();
+                                        ImGui.TreePop();
+                                    }
+
+                                ImGui.TreePop();
+                            }
+
                             break;
                         case "Settings":
                             Settings.DebugNearestEnts.Value = ImGuiExtension.HotkeySelector("Debug Nearest Entities", Settings.DebugNearestEnts.Value);
@@ -187,6 +198,7 @@ namespace DeveloperTool.Core
                     Settings.LastSettingPos = ImGui.GetWindowPosition();
                     Settings.LastSettingSize = ImGui.GetWindowSize();
                 }
+
                 ImGui.EndWindow();
             }
             else
@@ -287,7 +299,6 @@ namespace DeveloperTool.Core
                             if (propertyInfo.Name.Contains("Address"))
                                 o = Convert.ToInt64(o).ToString("X");
                             //if (!propertyInfo.Name.Contains("Address")) continue; //We want to copy any thing we need
-
                             ImGui.PushStyleColor(ColorTarget.Text, new ImGuiVector4(1, 0.647f, 0, 1));
                             ImGui.PushStyleColor(ColorTarget.Button, new ImGuiVector4(0, 0, 0, 0));
                             ImGui.PushStyleColor(ColorTarget.ButtonHovered, new ImGuiVector4(0.25f, 0.25f, 0.25f, 1));
