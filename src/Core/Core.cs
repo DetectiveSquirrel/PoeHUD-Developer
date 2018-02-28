@@ -84,17 +84,22 @@ namespace DeveloperTool.Core
             RenderNearestObjectsDebug();
         }
 
+        public void AddNearestObjectsDebug()
+        {
+            var playerPos = GameController.Player.Pos;
+            var entsToDebug = GameController.EntityListWrapper.Entities.Where(x => Vector3.Distance(x.Pos, playerPos) < Settings.NearestEntsRange.Value).ToList();
+            foreach (var ent in entsToDebug)
+            {
+                if (_nearbyObjectForDebug.Any(x => Equals(x.obj, ent))) continue;
+                _nearbyObjectForDebug.Add(($"{EntDebugPrefix} [{_nearbyObjectForDebug.Count + 1}], {ent.Path}", ent));
+            }
+        }
+
         private void RenderNearestObjectsDebug()
         {
             if (Settings.DebugNearestEnts.PressedOnce())
             {
-                var playerPos = GameController.Player.Pos;
-                var entsToDebug = GameController.EntityListWrapper.Entities.Where(x => Vector3.Distance(x.Pos, playerPos) < Settings.NearestEntsRange.Value).ToList();
-                foreach (var ent in entsToDebug)
-                {
-                    if (_nearbyObjectForDebug.Any(x => Equals(x.obj, ent))) continue;
-                    _nearbyObjectForDebug.Add(($"{EntDebugPrefix} [{_nearbyObjectForDebug.Count + 1}], {ent.Path}", ent));
-                }
+                AddNearestObjectsDebug();
             }
 
             foreach (var ent in _nearbyObjectForDebug)
@@ -171,6 +176,7 @@ namespace DeveloperTool.Core
 
                             if (ImGui.TreeNode($"{NearbyObjectDebugPrefix} [{_nearbyObjectForDebug.Count}]"))
                             {
+                                NearObjectsToDebugButton();
                                 for (var i = 0; i < _nearbyObjectForDebug.Count; i++)
                                     if (ImGui.TreeNode($"{_nearbyObjectForDebug[i].name}"))
                                     {
@@ -181,6 +187,10 @@ namespace DeveloperTool.Core
                                     }
 
                                 ImGui.TreePop();
+                            }
+                            else
+                            {
+                                NearObjectsToDebugButton();
                             }
 
                             break;
@@ -203,6 +213,12 @@ namespace DeveloperTool.Core
             }
             else
                 _coroutineRndColor.Pause();
+        }
+
+        public void NearObjectsToDebugButton()
+        {
+            ImGui.SameLine();
+            if (ImGui.SmallButton("Add Nearby Objects")) AddNearestObjectsDebug();
         }
 
         private void DebugForImgui(object obj)
