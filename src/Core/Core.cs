@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Windows.Forms;
-using Developer_Tool;
 using ImGuiNET;
 using PoeHUD.Controllers;
 using PoeHUD.DebugPlug;
@@ -17,11 +16,19 @@ using PoeHUD.Poe;
 using SharpDX;
 using ImGuiVector2 = System.Numerics.Vector2;
 using ImGuiVector4 = System.Numerics.Vector4;
+using SharpDX.Direct3D9;
 
-namespace SithImGuiDev.Core
+namespace DeveloperTool.Core
 {
     public class Core : BaseSettingsPlugin<Settings>
     {
+        private const string EntDebugPrefix = "EntDebug:";
+        private const string LocalPlayerDebugName = "LocalPlayer";
+        private const string GameControllerDebugName = "GameController";
+        private const string GameDebugName = "GameController.Game";
+        private const string IngameUiDebugName = "IngameUi";
+        private const string UiRootDebugName = "UIRoot";
+        private const string ServerDataDebugName = "ServerData";
         private static ImGuiVector2 _renderDebugwindowSize = new ImGuiVector2(784, API.GameController.Window.GetWindowRectangle().Height-129);
         private static ImGuiVector2 _renderDebugwindowPos = new ImGuiVector2(593, 0);
         private static readonly ImGuiVector2 RenderDebugnextWindowPos = new ImGuiVector2(_renderDebugwindowSize.X + _renderDebugwindowPos.X, _renderDebugwindowSize.Y + _renderDebugwindowPos.Y);
@@ -48,17 +55,75 @@ namespace SithImGuiDev.Core
             _settings = Settings;
             _rnd = new Random((int) _gameController.MainTimer.ElapsedTicks);
             _coroutineRndColor = new Coroutine(() => { _clr = new Color(_rnd.Next(255), _rnd.Next(255), _rnd.Next(255), 255); }, new WaitTime(200), nameof(Core), "Random Color").Run();
-            _objectForDebug.Add(("LocalPlayer", GameController.Game.IngameState.Data.LocalPlayer));
-            _objectForDebug.Add(("GameController", GameController));
-            _objectForDebug.Add(("GameController.Game", GameController.Game));
-            _objectForDebug.Add(("IngameUi", GameController.Game.IngameState.IngameUi));
-            _objectForDebug.Add(("UIRoot", GameController.Game.IngameState.UIRoot));
+            GameController.Area.OnAreaChange += Area_OnAreaChange;
+        }
+
+        private void Area_OnAreaChange(AreaController obj)
+        {
+            AddDefualtDebugObjects(true);
+        }
+
+        private void AddDefualtDebugObjects(bool removeOld)
+        {
+            if(removeOld)
+            {
+                _objectForDebug.RemoveAll(x =>
+                x.name == LocalPlayerDebugName ||
+                x.name == GameControllerDebugName ||
+                x.name == GameDebugName ||
+                x.name == IngameUiDebugName ||
+                x.name == UiRootDebugName ||
+                x.name == ServerDataDebugName);
+            }
+            _objectForDebug.Insert(0, (LocalPlayerDebugName, GameController.Game.IngameState.Data.LocalPlayer));
+            _objectForDebug.Insert(1, (GameControllerDebugName, GameController));
+            _objectForDebug.Insert(2, (GameDebugName, GameController.Game));
+            _objectForDebug.Insert(3, (IngameUiDebugName, GameController.Game.IngameState.IngameUi));
+            _objectForDebug.Insert(4, (UiRootDebugName, GameController.Game.IngameState.UIRoot));
+            _objectForDebug.Insert(4, (ServerDataDebugName, GameController.Game.IngameState.ServerData));
         }
 
         public override void Render()
         {
             RenderDebugInformation();
-            //ImGuiNative.igShowDemoWindow(ref _tempBool);
+            RenderNearestObjectsDebug();
+        }
+
+        private void RenderNearestObjectsDebug()
+        {
+            if (Settings.DebugNearestEnts.PressedOnce())
+            {
+                var playerPos = GameController.Player.Pos;
+                var entsToDebug = GameController.EntityListWrapper.Entities.Where(x => Vector3.Distance(x.Pos, playerPos) < Settings.NearestEntsRange.Value).ToList();
+
+                foreach (var ent in entsToDebug)
+                {
+                    if (_objectForDebug.Any(x => x.obj == ent)) continue;
+                    _objectForDebug.Add(($"{EntDebugPrefix} [{entsToDebug.Count}] {ent.Address.ToString("x")}, {ent.Path}", ent));
+                }
+            }
+
+            foreach (var ent in _objectForDebug)
+            {
+                if (!ent.name.StartsWith(EntDebugPrefix)) continue;
+                var entWrapper = ent.obj as EntityWrapper;
+
+                var screenDrawPos = GameController.Game.IngameState.Camera.WorldToScreen(entWrapper.Pos, entWrapper);
+
+                var label = ent.name;// entWrapper.Address.ToString("x");
+
+                label = label.Substring(label.IndexOf("[") + 1);
+                label = label.Substring(0, label.IndexOf("]"));
+
+                const FontDrawFlags drawFlags = FontDrawFlags.Center | FontDrawFlags.VerticalCenter;
+                const int textSize = 20;
+                var labelSize = Graphics.MeasureText(label, textSize, drawFlags);
+                labelSize.Width += 10;
+                labelSize.Height += 2;
+
+                Graphics.DrawBox(new RectangleF(screenDrawPos.X - labelSize.Width / 2, screenDrawPos.Y - labelSize.Height / 2, labelSize.Width, labelSize.Height), Color.Black);
+                Graphics.DrawText(label, textSize, screenDrawPos, drawFlags);
+            }
         }
 
         private void RenderDebugInformation()
@@ -74,7 +139,14 @@ namespace SithImGuiDev.Core
                 ImGui.SetNextWindowPos(RenderDebugnextWindowPos, Condition.Appearing, new ImGuiVector2(1, 1));
                 ImGui.SetNextWindowSize(_renderDebugwindowSize, Condition.Appearing);
                 ImGui.BeginWindow("DebugTree");
-                if (ImGui.Button("Clear##base")) _rectForDebug.Clear();
+                if (ImGui.Button("Clear Debug Rects##base")) _rectForDebug.Clear();
+
+                if (ImGui.Button("Clear Debug Obj##base"))
+                {
+                    _objectForDebug.Clear();
+                    AddDefualtDebugObjects(false);
+                }
+
                 ImGui.SameLine();
                 ImGui.Checkbox("F1 for debug hover", ref _enableDebugHover);
                 if (_enableDebugHover && WinApi.IsKeyDown(Keys.F1))
