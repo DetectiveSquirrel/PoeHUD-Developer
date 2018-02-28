@@ -29,7 +29,7 @@ namespace DeveloperTool.Core
         private const string IngameUiDebugName = "IngameUi";
         private const string UiRootDebugName = "UIRoot";
         private const string ServerDataDebugName = "ServerData";
-        private static ImGuiVector2 _renderDebugwindowSize = new ImGuiVector2(784, API.GameController.Window.GetWindowRectangle().Height-129);
+        private static ImGuiVector2 _renderDebugwindowSize = new ImGuiVector2(784, API.GameController.Window.GetWindowRectangle().Height - 129);
         private static ImGuiVector2 _renderDebugwindowPos = new ImGuiVector2(593, 0);
         private static readonly ImGuiVector2 RenderDebugnextWindowPos = new ImGuiVector2(_renderDebugwindowSize.X + _renderDebugwindowPos.X, _renderDebugwindowSize.Y + _renderDebugwindowPos.Y);
         public static Core Instance;
@@ -42,8 +42,6 @@ namespace DeveloperTool.Core
         private Random _rnd;
         private Settings _settings;
         private long _uniqueIndex;
-
-        // Examples apps
 
         public Core() => PluginName = "Qvin Debug Tree";
 
@@ -58,10 +56,7 @@ namespace DeveloperTool.Core
             GameController.Area.OnAreaChange += Area_OnAreaChange;
         }
 
-        private void Area_OnAreaChange(AreaController obj)
-        {
-            AddDefualtDebugObjects(true);
-        }
+        private void Area_OnAreaChange(AreaController obj) { AddDefualtDebugObjects(true); }
 
         private void AddDefualtDebugObjects(bool removeOld)
         {
@@ -75,6 +70,7 @@ namespace DeveloperTool.Core
                 x.name == UiRootDebugName ||
                 x.name == ServerDataDebugName);
             }
+
             _objectForDebug.Insert(0, (LocalPlayerDebugName, GameController.Game.IngameState.Data.LocalPlayer));
             _objectForDebug.Insert(1, (GameControllerDebugName, GameController));
             _objectForDebug.Insert(2, (GameDebugName, GameController.Game));
@@ -95,11 +91,10 @@ namespace DeveloperTool.Core
             {
                 var playerPos = GameController.Player.Pos;
                 var entsToDebug = GameController.EntityListWrapper.Entities.Where(x => Vector3.Distance(x.Pos, playerPos) < Settings.NearestEntsRange.Value).ToList();
-
                 foreach (var ent in entsToDebug)
                 {
-                    if (_objectForDebug.Any(x => x.obj == ent)) continue;
-                    _objectForDebug.Add(($"{EntDebugPrefix} [{_objectForDebug.Count}] {ent.Address.ToString("x")}, {ent.Path}", ent));
+                    if (_objectForDebug.Any(x => Equals(x.obj, ent))) continue;
+                    _objectForDebug.Add(($"{EntDebugPrefix} [{_objectForDebug.Count}] {ent.Address:x}, {ent.Path}", ent));
                 }
             }
 
@@ -107,20 +102,15 @@ namespace DeveloperTool.Core
             {
                 if (!ent.name.StartsWith(EntDebugPrefix)) continue;
                 var entWrapper = ent.obj as EntityWrapper;
-
                 var screenDrawPos = GameController.Game.IngameState.Camera.WorldToScreen(entWrapper.Pos, entWrapper);
-
-                var label = ent.name;// entWrapper.Address.ToString("x");
-
+                var label = ent.name; // entWrapper.Address.ToString("x");
                 label = label.Substring(label.IndexOf("[") + 1);
                 label = label.Substring(0, label.IndexOf("]"));
-
                 const FontDrawFlags drawFlags = FontDrawFlags.Center | FontDrawFlags.VerticalCenter;
                 const int textSize = 20;
                 var labelSize = Graphics.MeasureText(label, textSize, drawFlags);
                 labelSize.Width += 10;
                 labelSize.Height += 2;
-
                 Graphics.DrawBox(new RectangleF(screenDrawPos.X - labelSize.Width / 2, screenDrawPos.Y - labelSize.Height / 2, labelSize.Width, labelSize.Height), Color.Black);
                 Graphics.DrawText(label, textSize, screenDrawPos, drawFlags);
             }
@@ -140,7 +130,7 @@ namespace DeveloperTool.Core
                 ImGui.SetNextWindowSize(_renderDebugwindowSize, Condition.Appearing);
                 ImGui.BeginWindow("DebugTree");
                 if (ImGui.Button("Clear Debug Rects##base")) _rectForDebug.Clear();
-
+                ImGui.SameLine();
                 if (ImGui.Button("Clear Debug Obj##base"))
                 {
                     _objectForDebug.Clear();
@@ -191,8 +181,8 @@ namespace DeveloperTool.Core
                     }
                     else
                     {
-                        ro = (Entity)obj;
-                        comp = ((Entity)obj).GetComponents();
+                        ro = (Entity) obj;
+                        comp = ((Entity) obj).GetComponents();
                     }
 
                     if (ImGui.TreeNode($"Components {comp.Count} ##{ro.GetHashCode()}"))
@@ -239,56 +229,44 @@ namespace DeveloperTool.Core
                     ImGui.SameLine();
                     _uniqueIndex++;
                     if (ImGui.Button($"Draw this##{_uniqueIndex}"))
-                    {
                         _rectForDebug.Add(el1.GetClientRect());
-                    }
-
                     ImGui.SameLine();
                     _uniqueIndex++;
                     if (ImGui.Button($"Clear##from draw this{_uniqueIndex}")) _rectForDebug.Clear();
                 }
 
                 var oProp = obj.GetType().GetProperties(flags).Where(x => x.GetIndexParameters().Length == 0);
-                var ordered1 = oProp.OrderBy(x => x.PropertyType.GetInterfaces().Contains(typeof(IEnumerable)));//We want to show arrays and lists last
-
+                var ordered1 = oProp.OrderBy(x => x.PropertyType.GetInterfaces().Contains(typeof(IEnumerable))); //We want to show arrays and lists last
                 oProp = ordered1.ThenBy(x => x.Name).ToList();
                 foreach (var propertyInfo in oProp)
                 {
-
-                    if (propertyInfo.ReflectedType.IsSubclassOf(typeof(RemoteMemoryObject)))//We don't need to see this shit
-                    {
-                        if (propertyInfo.Name == "M" ||
-                            propertyInfo.Name == "Game" ||
-                            propertyInfo.Name == "Offsets")
+                    if (propertyInfo.ReflectedType.IsSubclassOf(typeof(RemoteMemoryObject))) //We don't need to see this shit
+                        if (propertyInfo.Name == "M" || propertyInfo.Name == "Game" || propertyInfo.Name == "Offsets")
                             continue;
-                    }
-
-                    if (propertyInfo.ReflectedType.IsSubclassOf(typeof(Component)))//...and this one too
-                    {
+                    if (propertyInfo.ReflectedType.IsSubclassOf(typeof(Component))) //...and this one too
                         if (propertyInfo.Name == "Owner")
                             continue;
-                    }
-
                     try
                     {
                         var value = propertyInfo.GetValue(obj, null);
                         if (
-                            //propertyInfo.GetValue(obj, null).GetType().IsPrimitive  //Wanna get null or what?
-                            propertyInfo.PropertyType.IsPrimitive
-                         || value is decimal
-                         || value is string
-                         || value is TimeSpan
-                         || value is Enum)
+                                //propertyInfo.GetValue(obj, null).GetType().IsPrimitive  //Wanna get null or what?
+                                propertyInfo.PropertyType.IsPrimitive || value is decimal || value is string || value is TimeSpan || value is Enum)
                         {
                             ImGui.Text($"{propertyInfo.Name}: ");
-                            ImGui.SameLine();
+                            ImGui.SameLine(0f, 0f);
                             var o = propertyInfo.GetValue(obj, null);
                             if (propertyInfo.Name.Contains("Address"))
                                 o = Convert.ToInt64(o).ToString("X");
-                            ImGui.Text($"{o}", new ImGuiVector4(1, 0.647f, 0, 1));
                             //if (!propertyInfo.Name.Contains("Address")) continue; //We want to copy any thing we need
-                            ImGui.SameLine();
-                            if (ImGui.SmallButton($"Copy##{o}")) ImGuiNative.igSetClipboardText(o.ToString());
+
+                            ImGui.PushStyleColor(ColorTarget.Text, new ImGuiVector4(1, 0.647f, 0, 1));
+                            ImGui.PushStyleColor(ColorTarget.Button, new ImGuiVector4(0, 0, 0, 0));
+                            ImGui.PushStyleColor(ColorTarget.ButtonHovered, new ImGuiVector4(0.25f, 0.25f, 0.25f, 1));
+                            ImGui.PushStyleColor(ColorTarget.ButtonActive, new ImGuiVector4(1, 1, 1, 1));
+                            if (ImGui.SmallButton($"{o}##{o}{o.GetHashCode()}"))
+                                ImGuiNative.igSetClipboardText(o.ToString());
+                            ImGui.PopStyleColor(4);
                         }
                         else
                         {
@@ -296,7 +274,11 @@ namespace DeveloperTool.Core
                             var o = propertyInfo.GetValue(obj, null);
                             if (o == null)
                             {
-                                ImGui.Text(label + ": Null");
+                                ImGui.Text(label + ": ");
+                                ImGui.SameLine(0f, 0f);
+                                ImGui.PushStyleColor(ColorTarget.Text, new ImGuiVector4(1, 0.366f, 0.366f, 1));
+                                ImGui.Text("Null");
+                                ImGui.PopStyleColor(1);
                                 continue;
                             }
 
@@ -325,16 +307,16 @@ namespace DeveloperTool.Core
                                     ImGuiNative.igUnindent();
                                     ImGui.TreePop();
                                 }
+
                                 continue;
                             }
 
-                            if (ImGui.TreeNode($"{propertyInfo.Name}:"))    //Hide arrays to tree node
+                            if (ImGui.TreeNode($"{propertyInfo.Name}:")) //Hide arrays to tree node
                             {
-                                var enumerable = (IEnumerable)o;
+                                var enumerable = (IEnumerable) o;
                                 var items = enumerable as IList<object> ?? enumerable.Cast<object>().ToList();
-
                                 var gArgs = o.GetType().GenericTypeArguments.ToList();
-                                if (gArgs.Any(x => x == typeof(Element) || x.IsSubclassOf(typeof(Element))))    //We need to draw it ONLY for UI Elements
+                                if (gArgs.Any(x => x == typeof(Element) || x.IsSubclassOf(typeof(Element)))) //We need to draw it ONLY for UI Elements
                                 {
                                     _uniqueIndex++;
                                     if (ImGui.Button($"Draw Childs##{_uniqueIndex}"))
@@ -342,7 +324,7 @@ namespace DeveloperTool.Core
                                         var tempi = 0;
                                         foreach (var item in items)
                                         {
-                                            var el = (Element)item;
+                                            var el = (Element) item;
                                             _rectForDebug.Add(el.GetClientRect());
                                             tempi++;
                                             if (tempi > 1000) break;
@@ -358,7 +340,6 @@ namespace DeveloperTool.Core
                                     ImGui.SameLine();
                                     _uniqueIndex++;
                                     if (ImGui.Button($"Clear##from draw childs##{_uniqueIndex}")) _rectForDebug.Clear();
-
                                 }
 
                                 var i = 0;
@@ -369,10 +350,9 @@ namespace DeveloperTool.Core
                                         ImGui.Text($"Null", new ImGuiVector4(0.486f, 0.988f, 0, 1));
                                         continue;
                                     }
+
                                     if (i > 500) break;
-
-
-                                    if (ImGui.TreeNode($"Index: {i}"))//Draw only index
+                                    if (ImGui.TreeNode($"Index: {i}")) //Draw only index
                                     {
                                         DebugForImgui(item);
                                         ImGui.TreePop();
@@ -382,19 +362,24 @@ namespace DeveloperTool.Core
                                         ImGui.SameLine();
                                         ImGui.Text($"{item}", new ImGuiVector4(0.486f, 0.988f, 0, 1));
                                     }
+
                                     i++;
                                 }
+
                                 ImGuiNative.igUnindent();
                             }
                         }
                     }
                     catch (Exception ex)
                     {
-                        ImGui.Text($"Error reading property: {propertyInfo.Name}, Error: {ex.ToString()}", new ImGuiVector4(1, 0, 0, 1));
+                        ImGui.Text($"Error reading property: {propertyInfo.Name}, Error: {ex}", new ImGuiVector4(1, 0, 0, 1));
                     }
                 }
             }
-            catch (Exception e) { DebugPlugin.LogMsg($"Debug Tree: {e.ToString()}", 1); }
+            catch (Exception e)
+            {
+                DebugPlugin.LogMsg($"Debug Tree: {e}", 1);
+            }
         }
 
         private void DrawChilds(object obj, bool onlyVisible = false)
@@ -419,9 +404,7 @@ namespace DeveloperTool.Core
             else
             {
                 if (obj is Element el)
-                {
                     _rectForDebug.Add(el.GetClientRect());
-                }
             }
         }
 
