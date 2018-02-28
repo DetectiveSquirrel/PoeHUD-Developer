@@ -261,24 +261,6 @@ namespace DeveloperTool.Libs
             return currentSelectedItem;
         }
 
-        // Unput Text
-        public static unsafe string InputText(string label, string currentValue, uint maxLength, InputTextFlags flags)
-        {
-            var currentStringBytes = Encoding.Default.GetBytes(currentValue);
-            var buffer = new byte[maxLength];
-            Array.Copy(currentStringBytes, buffer, Math.Min(currentStringBytes.Length, maxLength));
-
-            int Callback(TextEditCallbackData* data)
-            {
-                var pCursorPos = (int*) data->UserData;
-                if (!data->HasSelection()) *pCursorPos = data->CursorPos;
-                return 0;
-            }
-
-            ImGui.InputText(label, buffer, maxLength, flags, Callback);
-            return Encoding.Default.GetString(buffer).TrimEnd('\0');
-        }
-
         // ImColor_HSV Maker
         public static ImGuiVector4 ImColor_HSV(float h, float s, float v)
         {
