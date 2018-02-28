@@ -99,7 +99,7 @@ namespace DeveloperTool.Core
                 foreach (var ent in entsToDebug)
                 {
                     if (_objectForDebug.Any(x => x.obj == ent)) continue;
-                    _objectForDebug.Add(($"{EntDebugPrefix} [{entsToDebug.Count}] {ent.Address.ToString("x")}, {ent.Path}", ent));
+                    _objectForDebug.Add(($"{EntDebugPrefix} [{_objectForDebug.Count}] {ent.Address.ToString("x")}, {ent.Path}", ent));
                 }
             }
 
