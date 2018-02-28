@@ -165,7 +165,9 @@ namespace DeveloperTool.Core
                 for (var i = 0; i < _objectForDebug.Count; i++)
                     if (ImGui.TreeNode($"{_objectForDebug[i].name}"))
                     {
+                        ImGuiNative.igIndent();
                         DebugForImgui(_objectForDebug[i].obj);
+                        ImGuiNative.igUnindent();    
                         ImGui.TreePop();
                     }
 
