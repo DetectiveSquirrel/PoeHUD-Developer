@@ -402,6 +402,8 @@ namespace DeveloperTool.Core
                                     if (i > 500) break;
                                     if (ImGui.TreeNode($"[{i}]")) //Draw only index
                                     {
+                                        ImGui.SameLine();
+                                        ImGui.Text($"{item}", new ImGuiVector4(0.486f, 0.988f, 0, 1));
                                         DebugForImgui(item);
                                         ImGui.TreePop();
                                     }
