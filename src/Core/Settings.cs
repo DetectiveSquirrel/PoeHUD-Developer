@@ -11,6 +11,7 @@ namespace DeveloperTool.Core
         {
             ShowWindow = true;
             DebugNearestEnts = Keys.NumPad6;
+            DebugHoverItem = Keys.NumPad5;
             NearestEntsRange = new RangeNode<int>(300, 1, 2000);
             var centerPos = BasePlugin.API.GameController.Window.GetWindowRectangle().Center;
             LastSettingSize = new ImGuiVector2(620, 376);
@@ -20,6 +21,7 @@ namespace DeveloperTool.Core
         [Menu("Show Developer Information")]
         public ToggleNode ShowWindow { get; set; }
         public HotkeyNode DebugNearestEnts { get; set; }
+        public HotkeyNode DebugHoverItem { get; set; }
         public RangeNode<int> NearestEntsRange { get; set; }
 
         public ImGuiVector2 LastSettingPos { get; set; }
