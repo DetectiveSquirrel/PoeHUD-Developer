@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 using System.Reflection;
 using System.Windows.Forms;
 using DeveloperTool.Libs;
@@ -15,13 +14,15 @@ using PoeHUD.Models;
 using PoeHUD.Models.Interfaces;
 using PoeHUD.Plugins;
 using PoeHUD.Poe;
+using PoeHUD.Poe.Elements;
+using PoeHUD.Poe.EntityComponents;
+using PoeHUD.Poe.FilesInMemory;
 using SharpDX;
 using SharpDX.Direct3D9;
 using PoeHUD.Models.Attributes;
 using PoeHUD.Poe.Elements;
 using ImGuiVector2 = System.Numerics.Vector2;
 using ImGuiVector4 = System.Numerics.Vector4;
-using Vector3 = SharpDX.Vector3;
 
 namespace DeveloperTool.Core
 {
@@ -37,6 +38,7 @@ namespace DeveloperTool.Core
         private const string ServerDataDebugName = "ServerData";
         public static Core Instance;
         public static int Selected;
+        public static bool addedAtlasYet;
 
         public static string[] SettingName =
         {
@@ -56,6 +58,7 @@ namespace DeveloperTool.Core
         private long _uniqueIndex;
 
         public Core() => PluginName = "Qvin Debug Tree";
+        public List<WorldArea> GetBonusCompletedAreas => GameController.Game.IngameState.ServerData.GetBonusCompletedAreas();
 
         public override void Initialise()
         {
@@ -170,6 +173,27 @@ namespace DeveloperTool.Core
                                 _objectForDebug.Add((formattable, uihover));
                         }
 
+                        if (WinApi.IsKeyDown(Settings.DebugHoverItem))
+                        {
+                            var hover = GameController.Game.IngameState.UIHover;
+                            if (hover != null && hover.Address != 0)
+                            {
+                                var inventItem = hover.AsObject<NormalInventoryItem>();
+                                var item = inventItem.Item;
+                                if (item != null)
+                                {
+                                    var formattable = $"Inventory Item: {item.Path} {hover.Address}";
+                                    if (_objectForDebug.Any(x => x.name.Contains(formattable)))
+                                    {
+                                        var findIndex = _objectForDebug.FindIndex(x => x.name.Contains(formattable));
+                                        _objectForDebug[findIndex] = (formattable + "^", item);
+                                    }
+                                    else
+                                        _objectForDebug.Add((formattable, item));
+                                }
+                            }
+                        }
+
                         for (var i = 0; i < _objectForDebug.Count; i++)
                             if (ImGui.TreeNode($"{_objectForDebug[i].name}"))
                             {
@@ -196,10 +220,24 @@ namespace DeveloperTool.Core
                         else
                             NearObjectsToDebugButton();
 
+                        //if (ImGui.TreeNode($"Completed Atlas Items"))
+                        //{
+                        //        for (var i = 0; i < GetBonusCompletedAreas.Count; i++)
+                        //            if (ImGui.TreeNode($"{GetBonusCompletedAreas[i].Name}"))
+                        //            {
+                        //                ImGuiNative.igIndent();
+                        //                DebugForImgui(GetBonusCompletedAreas[i]);
+                        //                ImGuiNative.igUnindent();
+                        //                ImGui.TreePop();
+                        //            }
+
+                        //        ImGui.TreePop();
+                        //}
                         break;
                     case "Settings":
                         Settings.DebugNearestEnts.Value = ImGuiExtension.HotkeySelector("Debug Nearest Entities", Settings.DebugNearestEnts.Value);
                         Settings.NearestEntsRange.Value = ImGuiExtension.IntSlider("Entity Debug Range", Settings.NearestEntsRange);
+                        Settings.DebugHoverItem.Value = ImGuiExtension.HotkeySelector("Debug Inventory Item Hover", Settings.DebugHoverItem.Value);
                         break;
                 }
             ImGui.PopStyleVar();
@@ -289,6 +327,25 @@ namespace DeveloperTool.Core
                     ImGui.SameLine();
                     _uniqueIndex++;
                     if (ImGui.Button($"Clear##from draw this{_uniqueIndex}")) _rectForDebug.Clear();
+                }
+
+                if (obj is Entity normalInvItem)
+                {
+                    if (!normalInvItem.HasComponent<Base>()) return;
+                    _uniqueIndex++;
+                    if (ImGui.TreeNode($"Base Component##{normalInvItem.Id}{_uniqueIndex}"))
+                    {
+                        DebugProperty(typeof(Base), normalInvItem.GetComponent<Base>());
+                        ImGui.TreePop();
+                    }
+
+                    _uniqueIndex++;
+                    if (ImGui.TreeNode($"Base Item Type Info##{normalInvItem.Id}{_uniqueIndex}"))
+                    {
+                        var BIT = GameController.Files.BaseItemTypes.Translate(normalInvItem.Path);
+                        DebugProperty(typeof(BaseItemType), BIT);
+                        ImGui.TreePop();
+                    }
                 }
 
                 var oProp = obj.GetType().GetProperties(flags).Where(x => x.GetIndexParameters().Length == 0);
@@ -411,6 +468,8 @@ namespace DeveloperTool.Core
                                     if (i > 500) break;
                                     if (ImGui.TreeNode($"[{i}]")) //Draw only index
                                     {
+                                        ImGui.SameLine();
+                                        ImGui.Text($"{item}", new ImGuiVector4(0.486f, 0.988f, 0, 1));
                                         DebugForImgui(item);
                                         ImGui.TreePop();
                                     }
@@ -436,6 +495,71 @@ namespace DeveloperTool.Core
             catch (Exception e)
             {
                 DebugPlugin.LogMsg($"Debug Tree: {e}", 1);
+            }
+        }
+
+
+        private void DebugProperty(Type type, object instance)
+        {
+            var prefix = "";
+            var props = type.GetProperties();
+            foreach (var prop in props)
+            {
+                _uniqueIndex++;
+                object value = null;
+                Exception Ex = null;
+                try
+                {
+                    value = prop.GetValue(instance);
+                }
+                catch (Exception ex)
+                {
+                    Ex = ex;
+                }
+
+                ImGui.Text($"{prop.Name}: ");
+                ImGui.SameLine(0f, 0f);
+                var o = prop.GetValue(instance, null);
+                if (prop.Name.Contains("Address"))
+                    o = Convert.ToInt64(o).ToString("X");
+                //if (!propertyInfo.Name.Contains("Address")) continue; //We want to copy any thing we need
+                ImGui.PushStyleColor(ColorTarget.Text, new ImGuiVector4(1, 0.647f, 0, 1));
+                ImGui.PushStyleColor(ColorTarget.Button, new ImGuiVector4(0, 0, 0, 0));
+                ImGui.PushStyleColor(ColorTarget.ButtonHovered, new ImGuiVector4(0.25f, 0.25f, 0.25f, 1));
+                ImGui.PushStyleColor(ColorTarget.ButtonActive, new ImGuiVector4(1, 1, 1, 1));
+                if (ImGui.SmallButton($"{o}##{o}{o.GetHashCode()}"))
+                    ImGuiNative.igSetClipboardText(o.ToString());
+                ImGui.PopStyleColor(4);
+            }
+
+            var fields = type.GetFields();
+            foreach (var field in fields)
+            {
+                _uniqueIndex++;
+                object value = null;
+                Exception Ex = null;
+                try
+                {
+                    value = field.GetValue(instance);
+                }
+                catch (Exception ex)
+                {
+                    Ex = ex;
+                }
+
+                ImGui.Text($"{field.Name}: ");
+                ImGui.SameLine(0f, 0f);
+                var o = field.GetValue(instance);
+                if (field.Name.Contains("Address"))
+                    o = Convert.ToInt64(o).ToString("X");
+                //if (!propertyInfo.Name.Contains("Address")) continue; //We want to copy any thing we need
+                ImGui.PushStyleColor(ColorTarget.Text, new ImGuiVector4(1, 0.647f, 0, 1));
+                ImGui.PushStyleColor(ColorTarget.Button, new ImGuiVector4(0, 0, 0, 0));
+                ImGui.PushStyleColor(ColorTarget.ButtonHovered, new ImGuiVector4(0.25f, 0.25f, 0.25f, 1));
+                ImGui.PushStyleColor(ColorTarget.ButtonActive, new ImGuiVector4(1, 1, 1, 1));
+                if (ImGui.SmallButton($"{o}##{o}{o.GetHashCode()}"))
+                    ImGuiNative.igSetClipboardText(o.ToString());
+                ImGui.PopStyleColor(4);
             }
         }
 
