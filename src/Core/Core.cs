@@ -17,6 +17,8 @@ using PoeHUD.Plugins;
 using PoeHUD.Poe;
 using SharpDX;
 using SharpDX.Direct3D9;
+using PoeHUD.Models.Attributes;
+using PoeHUD.Poe.Elements;
 using ImGuiVector2 = System.Numerics.Vector2;
 using ImGuiVector4 = System.Numerics.Vector4;
 using Vector3 = SharpDX.Vector3;
@@ -153,6 +155,11 @@ namespace DeveloperTool.Core
                         if (_enableDebugHover && WinApi.IsKeyDown(Keys.F1))
                         {
                             var uihover = _gameController.Game.IngameState.UIHover;
+
+                            var normInventItem = uihover.AsObject<NormalInventoryItem>();
+                            if (normInventItem != null)
+                                uihover = normInventItem;
+
                             var formattable = $"Hover: {uihover} {uihover.Address}";
                             if (_objectForDebug.Any(x => x.name.Contains(formattable)))
                             {
@@ -289,6 +296,8 @@ namespace DeveloperTool.Core
                 oProp = ordered1.ThenBy(x => x.Name).ToList();
                 foreach (var propertyInfo in oProp)
                 {
+                    if (propertyInfo.GetCustomAttribute<HideInReflectionAttribute>() != null) continue;
+
                     if (propertyInfo.ReflectedType.IsSubclassOf(typeof(RemoteMemoryObject))) //We don't need to see this shit
                         if (propertyInfo.Name == "M" || propertyInfo.Name == "Game" || propertyInfo.Name == "Offsets")
                             continue;
