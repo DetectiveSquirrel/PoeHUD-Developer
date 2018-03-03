@@ -16,11 +16,10 @@ using PoeHUD.Plugins;
 using PoeHUD.Poe;
 using PoeHUD.Poe.Elements;
 using PoeHUD.Poe.EntityComponents;
-using PoeHUD.Poe.FilesInMemory;
+using PoeHUD.Poe.RemoteMemoryObjects;
 using SharpDX;
 using SharpDX.Direct3D9;
 using PoeHUD.Models.Attributes;
-using PoeHUD.Poe.Elements;
 using ImGuiVector2 = System.Numerics.Vector2;
 using ImGuiVector4 = System.Numerics.Vector4;
 
@@ -58,7 +57,7 @@ namespace DeveloperTool.Core
         private long _uniqueIndex;
 
         public Core() => PluginName = "Qvin Debug Tree";
-        public List<WorldArea> GetBonusCompletedAreas => GameController.Game.IngameState.ServerData.GetBonusCompletedAreas();
+        public List<WorldArea> GetBonusCompletedAreas => GameController.Game.IngameState.ServerData.BonusCompletedAreas;
 
         public override void Initialise()
         {
@@ -464,9 +463,10 @@ namespace DeveloperTool.Core
                                         ImGui.Text($"Null", new ImGuiVector4(0.486f, 0.988f, 0, 1));
                                         continue;
                                     }
+                                    _uniqueIndex++;
 
                                     if (i > 500) break;
-                                    if (ImGui.TreeNode($"[{i}]")) //Draw only index
+                                    if (ImGui.TreeNode($"[{i}]##{_uniqueIndex}")) //Draw only index
                                     {
                                         ImGui.SameLine();
                                         ImGui.Text($"{item}", new ImGuiVector4(0.486f, 0.988f, 0, 1));
@@ -505,6 +505,8 @@ namespace DeveloperTool.Core
             var props = type.GetProperties();
             foreach (var prop in props)
             {
+                if (prop.GetCustomAttribute<HideInReflectionAttribute>() != null) continue;
+
                 _uniqueIndex++;
                 object value = null;
                 Exception Ex = null;
@@ -535,6 +537,8 @@ namespace DeveloperTool.Core
             var fields = type.GetFields();
             foreach (var field in fields)
             {
+                if (field.GetCustomAttribute<HideInReflectionAttribute>() != null) continue;
+
                 _uniqueIndex++;
                 object value = null;
                 Exception Ex = null;
