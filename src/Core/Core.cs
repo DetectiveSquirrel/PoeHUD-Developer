@@ -132,10 +132,10 @@ namespace DeveloperTool.Core
             else
                 _coroutineRndColor.Resume();
             foreach (var rectangleF in _rectForDebug) Graphics.DrawFrame(rectangleF, 2, _clr);
-            if (!Settings.ShowWindow) return;
-            var isOpened = Settings.ShowWindow.Value;
+            if (!Settings.Enable.Value) return;
+            var isOpened = Settings.Enable.Value;
             ImGuiExtension.BeginWindow($"{PluginName} Settings", ref isOpened, Settings.LastSettingPos.X, Settings.LastSettingPos.Y, Settings.LastSettingSize.X, Settings.LastSettingSize.Y);
-            Settings.ShowWindow.Value = isOpened;
+            Settings.Enable.Value = isOpened;
             ImGui.PushStyleVar(StyleVar.ChildRounding, 5.0f);
             ImGuiExtension.ImGuiExtension_ColorTabs("LeftSettings", 35, SettingName, ref Selected, ref idPop);
             ImGuiNative.igGetContentRegionAvail(out var newcontentRegionArea);
@@ -237,6 +237,8 @@ namespace DeveloperTool.Core
                         Settings.DebugNearestEnts.Value = ImGuiExtension.HotkeySelector("Debug Nearest Entities", Settings.DebugNearestEnts.Value);
                         Settings.NearestEntsRange.Value = ImGuiExtension.IntSlider("Entity Debug Range", Settings.NearestEntsRange);
                         Settings.DebugHoverItem.Value = ImGuiExtension.HotkeySelector("Debug Inventory Item Hover", Settings.DebugHoverItem.Value);
+                        Settings.LimitEntriesDrawn.Value = ImGuiExtension.Checkbox("Limit Entries Drawn", Settings.LimitEntriesDrawn);
+                        Settings.EntriesDrawLimit.Value = ImGuiExtension.IntSlider("Entries Draw Limit", Settings.EntriesDrawLimit);
                         break;
                 }
             ImGui.PopStyleVar();
@@ -465,7 +467,7 @@ namespace DeveloperTool.Core
                                     }
                                     _uniqueIndex++;
 
-                                    if (i > 500) break;
+                                    if (Settings.LimitEntriesDrawn.Value && i > Settings.EntriesDrawLimit.Value) break;
                                     if (ImGui.TreeNode($"[{i}]##{_uniqueIndex}")) //Draw only index
                                     {
                                         ImGui.SameLine();
