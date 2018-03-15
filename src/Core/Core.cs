@@ -32,6 +32,8 @@ namespace DeveloperTool.Core
         private const string LocalPlayerDebugName = "LocalPlayer";
         private const string GameControllerDebugName = "GameController";
         private const string GameDebugName = "GameController.Game";
+        private const string GameIngameStateDebugName = "GameController.Game.IngameState";
+        private const string GameDataDebugName = "GameController.Game.IngameState.Data";
         private const string IngameUiDebugName = "IngameUi";
         private const string UiRootDebugName = "UIRoot";
         private const string ServerDataDebugName = "ServerData";
@@ -68,20 +70,22 @@ namespace DeveloperTool.Core
             _rnd = new Random((int) _gameController.MainTimer.ElapsedTicks);
             _coroutineRndColor = new Coroutine(() => { _clr = new Color(_rnd.Next(255), _rnd.Next(255), _rnd.Next(255), 255); }, new WaitTime(200), nameof(Core), "Random Color").Run();
             GameController.Area.OnAreaChange += Area_OnAreaChange;
+            AddDefualtDebugObjects();
         }
 
-        private void Area_OnAreaChange(AreaController obj) { AddDefualtDebugObjects(true); }
+        private void Area_OnAreaChange(AreaController obj) { AddDefualtDebugObjects(); }
 
-        private void AddDefualtDebugObjects(bool removeOld)
+        private void AddDefualtDebugObjects()
         {
-            if (removeOld)
-                _objectForDebug.RemoveAll(x => x.name == LocalPlayerDebugName || x.name == GameControllerDebugName || x.name == GameDebugName || x.name == IngameUiDebugName || x.name == UiRootDebugName || x.name == ServerDataDebugName);
+            _objectForDebug.Clear();
             _objectForDebug.Insert(0, (LocalPlayerDebugName, GameController.Game.IngameState.Data.LocalPlayer));
             _objectForDebug.Insert(1, (GameControllerDebugName, GameController));
             _objectForDebug.Insert(2, (GameDebugName, GameController.Game));
-            _objectForDebug.Insert(3, (IngameUiDebugName, GameController.Game.IngameState.IngameUi));
-            _objectForDebug.Insert(4, (UiRootDebugName, GameController.Game.IngameState.UIRoot));
-            _objectForDebug.Insert(5, (ServerDataDebugName, GameController.Game.IngameState.ServerData));
+            _objectForDebug.Insert(3, (GameIngameStateDebugName, GameController.Game.IngameState));
+            _objectForDebug.Insert(4, (GameDataDebugName, GameController.Game.IngameState.Data));
+            _objectForDebug.Insert(5, (IngameUiDebugName, GameController.Game.IngameState.IngameUi));
+            _objectForDebug.Insert(6, (UiRootDebugName, GameController.Game.IngameState.UIRoot));
+            _objectForDebug.Insert(7, (ServerDataDebugName, GameController.Game.IngameState.ServerData));
         }
 
         public override void Render()
@@ -105,12 +109,12 @@ namespace DeveloperTool.Core
         {
             if (Settings.DebugNearestEnts.PressedOnce())
                 AddNearestObjectsDebug();
-            foreach (var ent in _nearbyObjectForDebug)
+            foreach (var (name, obj) in _nearbyObjectForDebug)
             {
-                if (!ent.name.StartsWith(EntDebugPrefix)) continue;
-                var entWrapper = ent.obj as EntityWrapper;
+                if (!name.StartsWith(EntDebugPrefix)) continue;
+                var entWrapper = obj as EntityWrapper;
                 var screenDrawPos = GameController.Game.IngameState.Camera.WorldToScreen(entWrapper.Pos, entWrapper);
-                var label = ent.name; // entWrapper.Address.ToString("x");
+                var label = name; // entWrapper.Address.ToString("x");
                 label = label.Substring(label.IndexOf("[") + 1);
                 label = label.Substring(0, label.IndexOf("]"));
                 const FontDrawFlags drawFlags = FontDrawFlags.Center | FontDrawFlags.VerticalCenter;
@@ -149,7 +153,7 @@ namespace DeveloperTool.Core
                         {
                             _objectForDebug.Clear();
                             _nearbyObjectForDebug.Clear();
-                            AddDefualtDebugObjects(false);
+                            AddDefualtDebugObjects();
                         }
 
                         ImGui.SameLine();
@@ -386,8 +390,7 @@ namespace DeveloperTool.Core
                         else
                         {
                             var label = propertyInfo.Name;
-                            var o = propertyInfo.GetValue(obj, null);
-                            if (o == null)
+                            if (value == null)
                             {
                                 ImGui.Text(label + ": ");
                                 ImGui.SameLine(0f, 0f);
@@ -396,6 +399,7 @@ namespace DeveloperTool.Core
                                 ImGui.PopStyleColor(1);
                                 continue;
                             }
+                       
 
                             if (label.Contains("Framework") || label.Contains("Offsets"))
                                 continue;
@@ -407,30 +411,35 @@ namespace DeveloperTool.Core
                                     ImGui.SameLine();
                                     if (ImGui.SmallButton($"Debug this##{_uniqueIndex}"))
                                     {
-                                        var formattable = $"{label}->{o}";
+                                        var formattable = $"{label}->{value}";
                                         if (_objectForDebug.Any(x => x.name.Contains(formattable)))
                                         {
                                             var findIndex = _objectForDebug.FindIndex(x => x.name.Contains(formattable));
-                                            _objectForDebug[findIndex] = (formattable + "^", o);
+                                            _objectForDebug[findIndex] = (formattable + "^", value);
                                         }
                                         else
-                                            _objectForDebug.Add((formattable, o));
+                                            _objectForDebug.Add((formattable, value));
                                     }
+                                 
 
                                     ImGuiNative.igIndent();
-                                    DebugForImgui(o);
+                                    DebugForImgui(value);
                                     ImGuiNative.igUnindent();
                                     ImGui.TreePop();
                                 }
-
+                                else if(string.IsNullOrEmpty(value.ToString()) && value.ToString() != propertyInfo.PropertyType.FullName)//display ToString overrided clases
+                                {
+                                    ImGui.SameLine();
+                                    ImGui.Text($": {value}", new ImGuiVector4(0.486f, 0.988f, 0, 1));
+                                }
                                 continue;
                             }
 
                             if (ImGui.TreeNode($"{propertyInfo.Name}:")) //Hide arrays to tree node
                             {
-                                var enumerable = (IEnumerable) o;
+                                var enumerable = (IEnumerable) value;
                                 var items = enumerable as IList<object> ?? enumerable.Cast<object>().ToList();
-                                var gArgs = o.GetType().GenericTypeArguments.ToList();
+                                var gArgs = value.GetType().GenericTypeArguments.ToList();
                                 if (gArgs.Any(x => x == typeof(Element) || x.IsSubclassOf(typeof(Element)))) //We need to draw it ONLY for UI Elements
                                 {
                                     _uniqueIndex++;
@@ -503,7 +512,6 @@ namespace DeveloperTool.Core
 
         private void DebugProperty(Type type, object instance)
         {
-            var prefix = "";
             var props = type.GetProperties();
             foreach (var prop in props)
             {
