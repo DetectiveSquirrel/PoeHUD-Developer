@@ -18,15 +18,29 @@ namespace DeveloperTool.Core
             LimitEntriesDrawn = true;
             EntriesDrawLimit = new RangeNode<int>(500, 1, 5000);
         }
-        
+
+        [Menu("Toggle Show Window")]
+        public HotkeyNode ToggleDraw { get; set; } = Keys.NumPad9;
+
+        [Menu("Debug Nearest Ents")]
         public HotkeyNode DebugNearestEnts { get; set; }
+
+        [Menu("Debug Hover Item")]
         public HotkeyNode DebugHoverItem { get; set; }
+
+        [Menu("Nearest Ents Range")]
         public RangeNode<int> NearestEntsRange { get; set; }
+
 
         public ImGuiVector2 LastSettingPos { get; set; }
         public ImGuiVector2 LastSettingSize { get; set; }
 
+        [Menu("Limit Entries Drawn", 0)]
         public ToggleNode LimitEntriesDrawn { get; set; }
+
+        [Menu("Entries Draw Limit", 1, 0)]
         public RangeNode<int> EntriesDrawLimit { get; set; }
+
+        public bool Opened = false;
     }
 }
