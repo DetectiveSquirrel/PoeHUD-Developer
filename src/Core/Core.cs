@@ -46,7 +46,7 @@ namespace DeveloperTool.Core
 
         private readonly List<(string name, object obj)> _nearbyObjectForDebug = new List<(string name, object obj)>();
         private readonly List<(string name, object obj)> _objectForDebug = new List<(string name, object obj)>();
-        private readonly List<RectangleF> _rectForDebug = new List<RectangleF>();
+        private readonly List<Element> _rectForDebug = new List<Element>();
         private Color _clr = Color.Pink;
         private Coroutine _coroutineRndColor;
         private bool _enableDebugHover;
@@ -157,7 +157,15 @@ namespace DeveloperTool.Core
                 _coroutineRndColor.Pause();
             else
                 _coroutineRndColor.Resume();
-            foreach (var rectangleF in _rectForDebug) Graphics.DrawFrame(rectangleF, 2, _clr);
+
+            var indexCounter = 0;
+            foreach (var rectangleF in _rectForDebug)
+            {
+                var rect = rectangleF.GetClientRect();
+                Graphics.DrawFrame(rect, 2, _clr);
+                Graphics.DrawText(indexCounter.ToString(), 15, rect.TopLeft, FontDrawFlags.Top | FontDrawFlags.Left);
+                indexCounter++;
+            }
 
             var isOpened = Settings.Opened;
             ImGuiExtension.BeginWindow($"{PluginName} Settings", ref isOpened, Settings.LastSettingPos.X, Settings.LastSettingPos.Y, Settings.LastSettingSize.X, Settings.LastSettingSize.Y);
@@ -342,7 +350,7 @@ namespace DeveloperTool.Core
                     ImGui.SameLine();
                     _uniqueIndex++;
                     if (ImGui.SmallButton($"Draw this##{_uniqueIndex}"))
-                        _rectForDebug.Add(el1.GetClientRect());
+                        _rectForDebug.Add(el1);
                     ImGui.SameLine();
                     _uniqueIndex++;
                     if (ImGui.SmallButton($"Clear##from draw this{_uniqueIndex}")) _rectForDebug.Clear();
@@ -512,7 +520,7 @@ namespace DeveloperTool.Core
                                         foreach (var item in items)
                                         {
                                             var el = (Element)item;
-                                            _rectForDebug.Add(el.GetClientRect());
+                                            _rectForDebug.Add(el);
                                             tempi++;
                                             if (tempi > 1000) break;
                                         }
@@ -684,7 +692,7 @@ namespace DeveloperTool.Core
                     if (onlyVisible)
                         if (!el.IsVisible)
                             continue;
-                    _rectForDebug.Add(el.GetClientRect());
+                    _rectForDebug.Add(el);
                     tempi++;
                     if (tempi > 1000) break;
                     var oProp = item.GetType().GetProperties(flags).Where(x => x.GetIndexParameters().Length == 0);
@@ -694,7 +702,7 @@ namespace DeveloperTool.Core
             else
             {
                 if (obj is Element el)
-                    _rectForDebug.Add(el.GetClientRect());
+                    _rectForDebug.Add(el);
             }
         }
 

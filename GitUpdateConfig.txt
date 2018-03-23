@@ -1,0 +1,9 @@
+Owner: DetectiveSquirrel
+Name: PoeHUD-Developer
+Repository
+
+Ignore:
+github-items
+src
+.gitignore
+README.md
