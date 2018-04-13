@@ -153,10 +153,6 @@ namespace DeveloperTool.Core
         {
             _uniqueIndex = 0;
             var idPop = 1;
-            if (_rectForDebug.Count == 0)
-                _coroutineRndColor.Pause();
-            else
-                _coroutineRndColor.Resume();
 
             var indexCounter = 0;
             foreach (var rectangleF in _rectForDebug)
@@ -574,12 +570,23 @@ namespace DeveloperTool.Core
                                     {
                                         ImGui.SameLine();
                                         ImGui.Text($"{item}", new ImGuiVector4(0.486f, 0.988f, 0, 1));
+
+                                        if (item is Element element1)
+                                        {
+                                            ImGui.SameLine();
+                                            ImGui.SmallButton($"Show##from draw this{_uniqueIndex}");
+
+                                            if (ImGui.IsItemHovered(HoveredFlags.Default))
+                                            {
+                                                var rect = element1.GetClientRect();
+                                                Graphics.DrawFrame(rect, 2, _clr);
+                                            }
+                                        }
                                         DebugForImgui(item);
                                         ImGui.TreePop();
                                     }
                                     else
                                     {
-                                  
 
                                         if (!string.IsNullOrEmpty(item.ToString()) && item.ToString() != item.GetType().FullName)
                                         {
@@ -591,11 +598,23 @@ namespace DeveloperTool.Core
                                             ImGui.SameLine();
                                             ImGui.Text($"{item.GetType().Name}", new ImGuiVector4(0.486f, 0.988f, 0, 1));
                                         }
+
+
+                                        if (item is Element element1)
+                                        {
+                                            ImGui.SameLine();
+                                            ImGui.SmallButton($"Show##from draw this{_uniqueIndex}");
+
+                                            if (ImGui.IsItemHovered(HoveredFlags.Default))
+                                            {
+                                                var rect = element1.GetClientRect();
+                                                Graphics.DrawFrame(rect, 2, _clr);
+                                            }
+                                        }
                                     }
 
                                     i++;
                                 }
-
                                 ImGuiNative.igUnindent();
                             }
                         }
