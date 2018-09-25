@@ -23,6 +23,7 @@ using PoeHUD.Models.Attributes;
 using ImGuiVector2 = System.Numerics.Vector2;
 using ImGuiVector4 = System.Numerics.Vector4;
 using System.IO;
+using PoeHUD.Poe.Components;
 
 namespace DeveloperTool.Core
 {
@@ -32,6 +33,7 @@ namespace DeveloperTool.Core
         private const string NearbyObjectDebugPrefix = "Nearby Objects For Debug";
         private const string LocalPlayerDebugName = "LocalPlayer";
         private const string GameControllerDebugName = "GameController";
+        private const string DebugInformationName = "GameController.DebugInformation";
         private const string GameDebugName = "GameController.Game";
         private const string GameIngameStateDebugName = "GameController.Game.IngameState";
         private const string GameDataDebugName = "GameController.Game.IngameState.Data";
@@ -46,6 +48,7 @@ namespace DeveloperTool.Core
 
         private readonly List<(string name, object obj)> _nearbyObjectForDebug = new List<(string name, object obj)>();
         private readonly List<(string name, object obj)> _objectForDebug = new List<(string name, object obj)>();
+        private List<(string text, float num)> _debugInformation = new List<(string text, float num)>();
         private readonly List<Element> _rectForDebug = new List<Element>();
         private Color _clr = Color.Pink;
         private Coroutine _coroutineRndColor;
@@ -81,12 +84,13 @@ namespace DeveloperTool.Core
             _objectForDebug.Insert(0, (LocalPlayerDebugName, GameController.Game.IngameState.Data.LocalPlayer));
             _objectForDebug.Insert(1, (GameControllerDebugName, GameController));
             _objectForDebug.Insert(2, (GameDebugName, GameController.Game));
-            _objectForDebug.Insert(3, (GameIngameStateDebugName, GameController.Game.IngameState));
-            _objectForDebug.Insert(4, (GameDataDebugName, GameController.Game.IngameState.Data));
-            _objectForDebug.Insert(5, (IngameUiDebugName, GameController.Game.IngameState.IngameUi));
-            _objectForDebug.Insert(6, (UiRootDebugName, GameController.Game.IngameState.UIRoot));
-            _objectForDebug.Insert(7, (ServerDataDebugName, GameController.Game.IngameState.ServerData));
-            _objectForDebug.Insert(8, ("PluginAPI", API));
+            _objectForDebug.Insert(3, (DebugInformationName, GameController.DebugInformation));
+            _objectForDebug.Insert(4, (GameIngameStateDebugName, GameController.Game.IngameState));
+            _objectForDebug.Insert(5, (GameDataDebugName, GameController.Game.IngameState.Data));
+            _objectForDebug.Insert(6, (IngameUiDebugName, GameController.Game.IngameState.IngameUi));
+            _objectForDebug.Insert(7, (UiRootDebugName, GameController.Game.IngameState.UIRoot));
+            _objectForDebug.Insert(8, (ServerDataDebugName, GameController.Game.IngameState.ServerData));
+            _objectForDebug.Insert(9, ("PluginAPI", API));
         }
 
         public override void Render()
@@ -125,6 +129,16 @@ namespace DeveloperTool.Core
                 if (_nearbyObjectForDebug.Any(x => Equals(x.obj, ent))) continue;
                 _nearbyObjectForDebug.Add(($"{EntDebugPrefix} [{_nearbyObjectForDebug.Count + 1}], {ent.Path}", ent));
             }
+        }
+        public void DebugInformation()
+        {
+            List<(string text, float num)> _debugInformationTemp = new List<(string text, float num)>();
+            foreach (var dbinfo in GameController.DebugInformation)
+            {
+                _debugInformationTemp.Add((dbinfo.Key, dbinfo.Value));
+            }
+
+            _debugInformation = _debugInformationTemp;
         }
 
         private void RenderNearestObjectsDebug()
@@ -235,6 +249,37 @@ namespace DeveloperTool.Core
                     ImGuiNative.igUnindent();
                     ImGui.TreePop();
                 }
+
+            if (ImGui.TreeNode($"Debug Information##{_uniqueIndex}"))
+            {
+                DebugInformation();
+                if (_debugInformation.Count < 1)
+                {
+                    ImGui.TreePop();
+                    _uniqueIndex++;
+                }
+                else
+                {
+                    ImGuiNative.igIndent();
+                    foreach (var item in _debugInformation)
+                    {
+                        _uniqueIndex++;
+                        ImGui.Text($"{item.text}:", new ImGuiVector4(1, 0.412f, 0.706f, 1));
+                        ImGui.SameLine();
+
+                        ImGui.PushStyleColor(ColorTarget.Text, new ImGuiVector4(1, 0.647f, 0, 1));
+                        ImGui.PushStyleColor(ColorTarget.Button, new ImGuiVector4(0, 0, 0, 0));
+                        ImGui.PushStyleColor(ColorTarget.ButtonHovered, new ImGuiVector4(0.25f, 0.25f, 0.25f, 1));
+                        ImGui.PushStyleColor(ColorTarget.ButtonActive, new ImGuiVector4(1, 1, 1, 1));
+                        if (ImGui.SmallButton($"{item.num}##{_uniqueIndex++}"))
+                            ImGuiNative.igSetClipboardText(item.num.ToString());
+                        ImGui.PopStyleColor(4);
+                        _uniqueIndex++;
+                    }
+                    ImGuiNative.igUnindent();
+                    ImGui.TreePop();
+                }
+            }
 
             if (ImGui.TreeNode($"{NearbyObjectDebugPrefix} [{_nearbyObjectForDebug.Count}]##{_uniqueIndex}"))
             {
