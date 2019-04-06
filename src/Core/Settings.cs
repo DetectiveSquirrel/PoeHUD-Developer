@@ -41,6 +41,9 @@ namespace DeveloperTool.Core
         [Menu("Entries Draw Limit", 1, 0)]
         public RangeNode<int> EntriesDrawLimit { get; set; }
 
+        [Menu("Debug UI element tooltip")]
+        public HotkeyNode DebugTooltip { get; set; } = new HotkeyNode(Keys.D);
+
         public bool Opened = false;
     }
 }

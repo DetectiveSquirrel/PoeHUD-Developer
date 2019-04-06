@@ -15,7 +15,7 @@ using PoeHUD.Models.Interfaces;
 using PoeHUD.Plugins;
 using PoeHUD.Poe;
 using PoeHUD.Poe.Elements;
-using PoeHUD.Poe.EntityComponents;
+using PoeHUD.Poe.Components;
 using PoeHUD.Poe.RemoteMemoryObjects;
 using SharpDX;
 using SharpDX.Direct3D9;
@@ -100,6 +100,12 @@ namespace DeveloperTool.Core
 
             if (!Settings.Opened) return;
 
+            if (Settings.DebugTooltip.PressedOnce())
+            {
+                LogMessage("Debug", 2);
+                _objectForDebug.Add(($"Tooptip: {GameController.Game.IngameState.UIHoverTooltip.Address:x}", GameController.Game.IngameState.UIHoverTooltip));
+            }
+
             RenderDebugInformation();
             RenderNearestObjectsDebug();
 
@@ -177,14 +183,18 @@ namespace DeveloperTool.Core
                 indexCounter++;
             }
 
+       
+
             var isOpened = Settings.Opened;
             ImGuiExtension.BeginWindow($"{PluginName} Settings", ref isOpened, Settings.LastSettingPos.X, Settings.LastSettingPos.Y, Settings.LastSettingSize.X, Settings.LastSettingSize.Y);
             Settings.Opened = isOpened;
 
             ImGuiNative.igGetContentRegionAvail(out var newcontentRegionArea);
-            if (ImGui.BeginChild("RightSettings", new ImGuiVector2(newcontentRegionArea.X, newcontentRegionArea.Y), true, WindowFlags.Default))
+            ImGui.BeginChild("RightSettings", new ImGuiVector2(newcontentRegionArea.X, newcontentRegionArea.Y), true, WindowFlags.Default);
 
-                if (ImGui.Button("Clear Debug Rectangles##base")) _rectForDebug.Clear();
+            Settings.NearestEntsRange.Value = ImGuiExtension.IntSlider("Nearest Ents Debug Range", Settings.NearestEntsRange.Value, Settings.NearestEntsRange.Min, Settings.NearestEntsRange.Max);
+
+            if (ImGui.Button("Clear Debug Rectangles##base")) _rectForDebug.Clear();
             ImGui.SameLine();
             if (ImGui.Button("Clear Debug Objects##base"))
             {
@@ -207,8 +217,11 @@ namespace DeveloperTool.Core
                 var uihover = _gameController.Game.IngameState.UIHover;
 
                 var normInventItem = uihover.AsObject<NormalInventoryItem>();
-                if (normInventItem != null)
+                if (normInventItem.Item != null)
                     uihover = normInventItem;
+				else
+                    uihover = normInventItem.AsObject<HoverItemIcon>();
+				
 
                 var formattable = $"Hover: {uihover} {uihover.Address}";
                 if (_objectForDebug.Any(x => x.name.Contains(formattable)))
@@ -318,6 +331,35 @@ namespace DeveloperTool.Core
 
         private void DebugForImgui(object obj)
         {
+            #region Static offset fields with Attribute Debug 
+
+            const BindingFlags staticFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
+
+            if (obj != null)
+            {
+                var staticFields = obj.GetType().GetFields(staticFlags).Where(x => x.GetCustomAttributes(false).Any(y => y is StaticOffsetFieldDebugAttribute));
+
+                foreach (var fInfo in staticFields)
+                {
+                    if (fInfo.FieldType != typeof(int))
+                    {
+                        ImGui.Text($"Error in debug {fInfo.Name}: Should be int field");
+                        continue;
+                    }
+
+                    var arrt = fInfo.GetCustomAttribute<StaticOffsetFieldDebugAttribute>();
+
+                    var fieldValue = (int)fInfo.GetValue(null);
+
+                    if (ImGui.SliderInt($"{fInfo.Name}=0x{fieldValue:X}", ref fieldValue, arrt.SliderMin, arrt.SliderMax, "%.00f"))
+                    {
+                        fInfo.SetValue(null, fieldValue);
+                    }                
+                }
+            }
+
+            #endregion
+
             const BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
             try
             {
@@ -354,7 +396,7 @@ namespace DeveloperTool.Core
                                 ImGui.PushStyleColor(ColorTarget.Button, new ImGuiVector4(0, 0, 0, 0));
                                 ImGui.PushStyleColor(ColorTarget.ButtonHovered, new ImGuiVector4(0.25f, 0.25f, 0.25f, 1));
                                 ImGui.PushStyleColor(ColorTarget.ButtonActive, new ImGuiVector4(1, 1, 1, 1));
-                                if (ImGui.SmallButton($"{c.Value.ToString("x")}##{_uniqueIndex++}"))
+                                if (ImGui.SmallButton($"{c.Value:x}##{_uniqueIndex++}"))
                                     ImGuiNative.igSetClipboardText(c.Value.ToString("x"));
                                 ImGui.PopStyleColor(4);
 
@@ -368,7 +410,7 @@ namespace DeveloperTool.Core
                             _uniqueIndex++;
                             if (ImGui.SmallButton($"Debug this##{_uniqueIndex}"))
                             {
-                                var formattableString = $"{obj}->{c.Key}";
+                                var formattableString = $"{obj}->{c.Key} ({c.Value:x})";
                                 if (_objectForDebug.Any(x => x.name.Contains(formattableString)))
                                 {
                                     var findIndex = _objectForDebug.FindIndex(x => x.name.Contains(formattableString));
@@ -523,7 +565,7 @@ namespace DeveloperTool.Core
 
                                     if (ImGui.SmallButton($"Debug this##{_uniqueIndex}"))
                                     {
-                                        var formattable = $"{label}->{value}";
+                                        var formattable = $"{label}->{value} ({value.GetHashCode()})";
                                         if (_objectForDebug.Any(x => x.name.Contains(formattable)))
                                         {
                                             var findIndex = _objectForDebug.FindIndex(x => x.name.Contains(formattable));
