@@ -437,6 +437,20 @@ namespace DeveloperTool.Core
                     ImGui.SameLine();
                     _uniqueIndex++;
                     if (ImGui.SmallButton($"Clear##from draw this{_uniqueIndex}")) _rectForDebug.Clear();
+
+
+                    var indexPath = new List<int>();
+                    var iterator = el1;
+                    while (iterator.Address != 0)
+                    {
+                        if(iterator.Parent.Address != 0)
+                        indexPath.Add(iterator.Parent.Children.FindIndex(x => x.Address == iterator.Address));
+                        iterator = iterator.Parent;
+                    }
+
+                    indexPath.Reverse();
+                    ImGui.Text($"Path from root: [{string.Join(", ", indexPath)}]");
+                    _uniqueIndex++;
                 }
 
                 if (obj is Entity normalInvItem)
